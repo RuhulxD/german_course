@@ -114,6 +114,63 @@
             display: block;
         }
 
+        .translation-box {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .translation-content {
+            padding: 20px;
+            min-height: 100px;
+        }
+
+        .translation-original {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .translation-result {
+            font-size: 20px;
+            color: #4CAF50;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .translation-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .translation-link:hover {
+            background-color: #357ae8;
+        }
+
+        .translation-source {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+            font-style: italic;
+        }
+
+        .translation-loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
         .translate-button-wrapper {
             border: 2px solid #ddd;
             border-radius: 5px;
@@ -188,12 +245,11 @@
             </div>
         </div>
 
-        <div class="translate-button-wrapper">
-            <div class="iframe-title">Google Translate (German → Bengali)</div>
-            <button id="translateButton" class="translate-button" disabled>
-                <span class="translate-button-icon">🌐</span>
-                <span>Click a word above to translate</span>
-            </button>
+        <div class="translation-box">
+            <div class="iframe-title">Translation (German → Bengali)</div>
+            <div id="translationContent" class="translation-content">
+                <div class="empty-state">Click a word above to see translation...</div>
+            </div>
         </div>
 
         <div class="iframe-wrapper">
@@ -206,7 +262,7 @@
         const textInput = document.getElementById('textInput');
         const wordList = document.getElementById('wordList');
         const dictFrame = document.getElementById('dictFrame');
-        const translateButton = document.getElementById('translateButton');
+        const translationContent = document.getElementById('translationContent');
 
         // Function to extract words from text
         function extractWords(text) {
@@ -247,26 +303,55 @@
             });
         }
 
+        // Function to fetch translation using free API and display in div
+        async function fetchAndDisplayTranslation(word) {
+            // Show loading state
+            translationContent.innerHTML = `
+                <div class="translation-loading">Translating "${word}"...</div>
+            `;
+
+            try {
+                // Using MyMemory Translation API (free, no API key required for limited use)
+                const response = await fetch(
+                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=de|bn`
+                );
+                const data = await response.json();
+                
+                if (data.responseData && data.responseData.translatedText) {
+                    const translation = data.responseData.translatedText;
+                    const googleTranslateUrl = `https://translate.google.com/?sl=de&tl=bn&text=${encodeURIComponent(word)}&op=translate`;
+                    
+                    // Display the translation directly in the div
+                    translationContent.innerHTML = `
+                        <div class="translation-original">German: ${word}</div>
+                        <div class="translation-result">Bengali: ${translation}</div>
+                        <a href="${googleTranslateUrl}" target="_blank" class="translation-link">Open in Google Translate</a>
+                        <div class="translation-source">Translation provided by MyMemory Translation API</div>
+                    `;
+                } else {
+                    throw new Error('No translation data received');
+                }
+            } catch (error) {
+                console.error('Translation API error:', error);
+                const googleTranslateUrl = `https://translate.google.com/?sl=de&tl=bn&text=${encodeURIComponent(word)}&op=translate`;
+                // Show error with fallback link
+                translationContent.innerHTML = `
+                    <div class="translation-loading">Unable to fetch translation.</div>
+                    <a href="${googleTranslateUrl}" target="_blank" class="translation-link">Open Google Translate</a>
+                `;
+            }
+        }
+
         // Function to handle word click
-        function handleWordClick(word) {
+        async function handleWordClick(word) {
             // Encode word for URL
             const encodedWord = encodeURIComponent(word);
             
             // Update dict.cc iframe
             dictFrame.src = `https://www.dict.cc/?s=${encodedWord}`;
             
-            // Update Google Translate button
-            translateButton.disabled = false;
-            translateButton.innerHTML = `
-                <span class="translate-button-icon">🌐</span>
-                <span>Translate "${word}" → Open Google Translate</span>
-            `;
-            
-            // Store the word for the button click
-            translateButton.onclick = () => {
-                const translateUrl = `https://translate.google.com/?sl=de&tl=bn&text=${encodedWord}&op=translate`;
-                window.open(translateUrl, '_blank');
-            };
+            // Fetch translation and display in iframe
+            await fetchAndDisplayTranslation(word);
         }
 
         // Event listener for input changes
