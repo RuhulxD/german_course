@@ -28,6 +28,40 @@
             margin-bottom: 20px;
         }
 
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .nav-link:active {
+            transform: translateY(0);
+        }
+
         .input-section {
             margin-bottom: 20px;
         }
@@ -231,6 +265,16 @@
     <div class="container">
         <h1>Word Dictionary & Translator</h1>
         
+        <div class="nav-bar">
+            <a href="?l=lws&p=1" class="nav-link">lws-1</a>
+            <a href="?l=lws&p=2" class="nav-link">lws-2</a>
+            <a href="?l=lws&p=3" class="nav-link">lws-3</a>
+            <a href="?l=lws&p=4" class="nav-link">lws-4</a>
+            <a href="?l=lws&p=5" class="nav-link">lws-5</a>
+            <a href="?l=lws&p=6" class="nav-link">lws-6</a>
+            <a href="?l=lws&p=7" class="nav-link">lws-7</a>
+        </div>
+        
         <div class="input-section">
             <textarea 
                 id="textInput" 
@@ -276,8 +320,9 @@
                 .map(word => word.trim())
                 .filter(word => word.length > 0)
                 .map(word => {
-                    // Remove punctuation from start and end of words
-                    return word.replace(/^[^\w]+|[^\w]+$/g, '');
+                    // Remove punctuation from start and end of words, but preserve German special characters (Ö, Ä, Ü, ß, etc.)
+                    // This regex removes common punctuation but keeps Unicode letters
+                    return word.replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, '');
                 })
                 .filter(word => word.length > 0);
             
@@ -361,8 +406,52 @@
             renderWordList(words);
         });
 
+        // Function to load words from URL parameters
+        async function loadWordsFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const folder = urlParams.get('l'); // e.g., 'lws'
+            const page = urlParams.get('p');   // e.g., '1'
+
+            if (folder && page) {
+                try {
+                    // Construct the file path
+                    const filePath = `${folder}/pages/${page}`;
+                    
+                    // Fetch the file content
+                    const response = await fetch(filePath);
+                    if (!response.ok) {
+                        throw new Error(`File not found: ${filePath}`);
+                    }
+                    
+                    const text = await response.text();
+                    
+                    // Split by newlines, filter empty lines, and join with spaces
+                    const words = text
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0);
+                    
+                    // Join words with spaces and put in textarea
+                    const wordsText = words.join(' ');
+                    textInput.value = wordsText;
+                    
+                    // Trigger input event to extract and display words
+                    const inputEvent = new Event('input', { bubbles: true });
+                    textInput.dispatchEvent(inputEvent);
+                    
+                } catch (error) {
+                    console.error('Error loading words from URL:', error);
+                    // Show error message in textarea
+                    textInput.value = `Error: Could not load words from ${folder}/pages/${page}`;
+                }
+            }
+        }
+
         // Initialize with empty state
         renderWordList([]);
+        
+        // Load words from URL parameters if present
+        loadWordsFromUrl();
     </script>
 </body>
 </html>
