@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>German Vocabulary - CSV Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .vocab-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+
+        .page-selector select {
+            padding: 8px 16px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .page-selector select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        thead {
+            background-color: #333;
+            color: white;
+        }
+
+        th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #d32f2f;
+            font-size: 18px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: #45a049;
+        }
+
+        .word-cell {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .pronunciation-cell {
+            font-style: italic;
+            color: #666;
+        }
+
+        .meaning-cell {
+            color: #4CAF50;
+        }
+
+        .sentence-cell {
+            font-size: 0.9em;
+            color: #555;
+            font-style: italic;
+        }
+
+        .action-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .audio-link, .dict-link {
+            padding: 6px 12px;
+            font-size: 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .audio-link {
+            background-color: #4285f4;
+            color: white;
+        }
+
+        .audio-link:hover {
+            background-color: #357ae8;
+            transform: translateY(-1px);
+        }
+
+        .dict-link {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .dict-link:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .wiktionary-link {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .wiktionary-link:hover {
+            background-color: #f57c00;
+            transform: translateY(-1px);
+        }
+
+        .action-cell {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="vocab-container">
+        <a href="index.html" class="back-link">← Back to Dictionary</a>
+        
+        <h1>German Vocabulary - CSV Viewer</h1>
+        
+        <div class="page-selector">
+            <label for="pageSelect">Select Page:</label>
+            <select id="pageSelect">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <div class="table-wrapper" id="tableWrapper">
+            <div class="loading">Select a page to view vocabulary...</div>
+        </div>
+    </div>
+
+    <script>
+        const pageSelect = document.getElementById('pageSelect');
+        const tableWrapper = document.getElementById('tableWrapper');
+
+        // Generate page options (1-14)
+        function generatePageOptions() {
+            pageSelect.innerHTML = '<option value="">Select a page...</option>';
+            for (let i = 1; i <= 14; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Page ${i} (lws-${i})`;
+                pageSelect.appendChild(option);
+            }
+        }
+
+        // Parse CSV text into array of objects
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split(',');
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // Handle CSV with commas inside quoted fields
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+
+                if (values.length === headers.length) {
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header.trim()] = values[index] || '';
+                    });
+                    data.push(row);
+                }
+            }
+
+            return data;
+        }
+
+        // Create table from CSV data
+        function createTable(data) {
+            if (data.length === 0) {
+                tableWrapper.innerHTML = '<div class="error">No data found in CSV file.</div>';
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            let html = '<table><thead><tr>';
+
+            // Create header row
+            headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '<th>Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            // Create data rows
+            data.forEach(row => {
+                html += '<tr>';
+                const germanWord = row[headers[0]] || '';
+                // Extract just the word without article for links (remove der/die/das)
+                const wordForLink = germanWord.replace(/^(der|die|das)\s+/i, '').trim();
+                
+                headers.forEach((header, index) => {
+                    const value = row[header] || '';
+                    let cellClass = '';
+                    if (index === 0) cellClass = 'word-cell';
+                    else if (index === 1) cellClass = 'pronunciation-cell';
+                    else if (index === 2 || index === 3) cellClass = 'meaning-cell';
+                    else if (index === 4) cellClass = 'sentence-cell';
+                    
+                    html += `<td class="${cellClass}">${value}</td>`;
+                });
+                
+                // Add action links column
+                if (wordForLink) {
+                    const encodedWord = encodeURIComponent(wordForLink);
+                    const googleAudioUrl = `https://translate.google.com/?sl=de&tl=bn&op=translate&text=${encodedWord}`;
+                    const dictUrl = `https://www.dict.cc/?s=${encodedWord}`;
+                    const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodedWord}#German`;
+                    
+                    html += `<td class="action-cell">
+                        <div class="action-links">
+                            <a href="${googleAudioUrl}" target="_blank" class="audio-link" title="Listen pronunciation (Google TTS)">🔊 Google Translate</a>
+                            <a href="${dictUrl}" target="_blank" class="dict-link" title="Look up in dict.cc">📖 Dict.cc</a>
+                            <a href="${wiktionaryUrl}" target="_blank" class="wiktionary-link" title="Look up in Wiktionary">📚 Wiktionary</a>
+                        </div>
+                    </td>`;
+                } else {
+                    html += '<td class="action-cell"></td>';
+                }
+                
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            tableWrapper.innerHTML = html;
+        }
+
+        // Load CSV file
+        async function loadCSV(pageNumber) {
+            if (!pageNumber) {
+                tableWrapper.innerHTML = '<div class="loading">Select a page to view vocabulary...</div>';
+                return;
+            }
+
+            tableWrapper.innerHTML = '<div class="loading">Loading CSV file...</div>';
+
+            try {
+                const response = await fetch(`lws/csv/${pageNumber}.csv`);
+                if (!response.ok) {
+                    throw new Error(`File not found: lws/csv/${pageNumber}.csv`);
+                }
+
+                const csvText = await response.text();
+                const data = parseCSV(csvText);
+                createTable(data);
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                tableWrapper.innerHTML = `<div class="error">Error loading CSV file: ${error.message}</div>`;
+            }
+        }
+
+        // Event listener for page selection
+        pageSelect.addEventListener('change', (e) => {
+            loadCSV(e.target.value);
+        });
+
+        // Check URL parameter for page
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('p');
+        if (pageParam) {
+            setTimeout(() => {
+                pageSelect.value = pageParam;
+                loadCSV(pageParam);
+            }, 100);
+        }
+
+        // Initialize
+        generatePageOptions();
+    </script>
+</body>
+</html>
