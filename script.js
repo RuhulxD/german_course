@@ -142,37 +142,37 @@ async function loadWordsFromUrl() {
     }
 }
 
-// Function to detect available page files and generate navigation links
-async function generateNavigationLinks() {
-    const navBar = document.getElementById('navBar');
-    const folder = 'lws'; // Default folder, could be made dynamic later
-    const maxPages = 15; // Maximum number of pages to check
-    
-    // Try to fetch files and detect which ones exist
-    const availablePages = [];
-    
-    // Check pages 1 to maxPages
-    for (let i = 1; i <= maxPages; i++) {
-        availablePages.push(i);
-    }
-    // Sort pages numerically
-    availablePages.sort((a, b) => a - b);
-    
-    // Generate navigation links
-    navBar.innerHTML = '';
-    availablePages.forEach(pageNum => {
-        const link = document.createElement('a');
-        link.href = `?l=${folder}&p=${pageNum}`;
-        link.className = 'nav-link';
-        link.textContent = `${folder}-${pageNum}`;
-        navBar.appendChild(link);
-    });
-    
-    // If no pages found, show a message
-    if (availablePages.length === 0) {
-        navBar.innerHTML = '<div class="empty-state">No page files found</div>';
-    }
-}
+        // Function to detect available page files and generate navigation links
+        async function generateNavigationLinks() {
+            const navBar = document.getElementById('navBar');
+            const folder = 'lws'; // Default folder, could be made dynamic later
+            const maxPages = 18; // Maximum number of pages to check
+            
+            // Try to fetch files and detect which ones exist
+            const availablePages = [];
+            
+            // Check pages 1 to maxPages
+            for (let i = 1; i <= maxPages; i++) {
+                availablePages.push(i);
+            }
+            // Sort pages numerically
+            availablePages.sort((a, b) => a - b);
+            
+            // Generate navigation links
+            navBar.innerHTML = '';
+            availablePages.forEach(pageNum => {
+                const link = document.createElement('a');
+                link.href = `?l=${folder}&p=${pageNum}`;
+                link.className = 'nav-link';
+                link.textContent = `${folder}-${pageNum}`;
+                navBar.appendChild(link);
+            });
+            
+            // If no pages found, show a message
+            if (availablePages.length === 0) {
+                navBar.innerHTML = '<div class="empty-state">No page files found</div>';
+            }
+        }
 
 // Initialize with empty state
 renderWordList([]);

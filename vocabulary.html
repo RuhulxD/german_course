@@ -205,10 +205,10 @@
         const pageSelect = document.getElementById('pageSelect');
         const tableWrapper = document.getElementById('tableWrapper');
 
-        // Generate page options (1-14)
+        // Generate page options (1-18)
         function generatePageOptions() {
             pageSelect.innerHTML = '<option value="">Select a page...</option>';
-            for (let i = 1; i <= 14; i++) {
+            for (let i = 1; i <= 18; i++) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = `Page ${i} (lws-${i})`;
