@@ -146,7 +146,7 @@ async function loadWordsFromUrl() {
         async function generateNavigationLinks() {
             const navBar = document.getElementById('navBar');
             const folder = 'lws'; // Default folder, could be made dynamic later
-            const maxPages = 18; // Maximum number of pages to check
+            const maxPages = 25; // Maximum number of pages to check
             
             // Try to fetch files and detect which ones exist
             const availablePages = [];

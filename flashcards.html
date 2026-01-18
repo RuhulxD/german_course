@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>German Flashcards</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .flashcard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: #45a049;
+        }
+
+        .mode-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .mode-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+
+        .mode-selector select,
+        .mode-selector input {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .mode-selector button {
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .mode-selector button:hover {
+            background-color: #357ae8;
+        }
+
+        .custom-input-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .custom-input-section textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .card-wrapper {
+            perspective: 1000px;
+            margin: 30px auto;
+            max-width: 600px;
+        }
+
+        .card {
+            width: 100%;
+            height: 500px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            background-color: white;
+            border: 2px solid #ddd;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #a8e6cf 0%, #88d8c0 50%, #7dd3fc 100%);
+            color: #1e3a8a;
+        }
+
+        .card-word {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .card-info {
+            font-size: 18px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .card-info-item {
+            margin: 10px 0;
+        }
+
+        .card-label {
+            font-weight: bold;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-prev {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-prev:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+
+        .btn-flip {
+            background-color: #4285f4;
+            color: white;
+        }
+
+        .btn-flip:hover {
+            background-color: #357ae8;
+        }
+
+        .btn-next {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-info {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .mark-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .mark-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mark-known {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .mark-unknown {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .mark-review {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .mark-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .audio-btn {
+            padding: 10px 20px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0;
+            min-width: 120px;
+        }
+
+        .audio-btn:hover {
+            background-color: #138496;
+        }
+
+        .quick-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-link {
+            padding: 10px 20px;
+            font-size: 14px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .link-dict {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .link-wiki {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .stats-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="flashcard-container">
+        <a href="vocabulary.html" class="back-link">← Back to Vocabulary</a>
+        
+        <h1>German Flashcards</h1>
+        
+        <div class="mode-selector">
+            <label for="studyMode">Study Mode:</label>
+            <select id="studyMode">
+                <option value="all">All Pages</option>
+                <option value="page">By Page</option>
+                <option value="custom">Custom Words</option>
+            </select>
+            
+            <select id="pageSelect" class="page-select">
+                <option value="">Select Page...</option>
+            </select>
+            
+            <div id="customInputSection" class="custom-input-section hidden">
+                <label>Enter German words (one per line):</label>
+                <textarea id="customWordsInput" placeholder="Bild&#10;Haus&#10;Auto"></textarea>
+                <button onclick="loadCustomWords()">Load Custom Words</button>
+            </div>
+            
+            <button onclick="loadCards()">Start Studying</button>
+        </div>
+
+        <div id="flashcardArea" class="hidden">
+            <div class="progress-info">
+                <span id="progressText">Card 1 of 10</span>
+            </div>
+
+            <div class="card-wrapper">
+                <div class="card" id="flashcard" onclick="flipCard()">
+                    <div class="card-face card-front">
+                        <div class="card-word" id="cardWord">Loading...</div>
+                        <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">Click to flip</div>
+                    </div>
+                    <div class="card-face card-back">
+                        <div class="card-info">
+                            <div class="card-info-item" style="margin-bottom: 20px;">
+                                <div class="card-label">German Word</div>
+                                <div id="cardFullWord" style="font-size: 24px; font-weight: bold; margin-top: 5px;">-</div>
+                            </div>
+                            <div class="card-info-item">
+                                <div class="card-label">Pronunciation</div>
+                                <div id="cardPronunciation">-</div>
+                            </div>
+                            <div class="card-info-item">
+                                <div class="card-label">Bangla Meaning</div>
+                                <div id="cardBanglaMeaning">-</div>
+                            </div>
+                            <div class="card-info-item">
+                                <div class="card-label">English Meaning</div>
+                                <div id="cardEnglishMeaning">-</div>
+                            </div>
+                            <div class="card-info-item">
+                                <div class="card-label">Example Sentence</div>
+                                <div id="cardSentence" style="font-size: 14px; font-style: italic; margin-top: 10px;">-</div>
+                            </div>
+                        </div>
+                        <div class="action-buttons-row">
+                            <div class="quick-links" id="quickLinks"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mark-buttons">
+                <button class="mark-btn mark-known" onclick="markCard('known')">✓ Known</button>
+                <button class="mark-btn mark-unknown" onclick="markCard('unknown')">✗ Unknown</button>
+                <button class="mark-btn mark-review" onclick="markCard('review')">↻ Review</button>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn btn-prev" onclick="previousCard()" id="prevBtn">← Previous</button>
+                <button class="control-btn btn-flip" onclick="flipCard()">Flip Card</button>
+                <button class="control-btn btn-next" onclick="nextCard()" id="nextBtn">Next →</button>
+            </div>
+
+            <div class="stats-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Statistics</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportProgress()" style="padding: 8px 16px; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px;">📥 Export Progress</button>
+                        <button onclick="clearProgress()" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px;">🗑️ Clear Progress</button>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">Total Cards</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statKnown">0</div>
+                        <div class="stat-label">Known</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statUnknown">0</div>
+                        <div class="stat-label">Unknown</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statReview">0</div>
+                        <div class="stat-label">Review</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statProgress">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="flashcards.js"></script>
+</body>
+</html>

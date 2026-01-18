@@ -185,7 +185,10 @@
 </head>
 <body>
     <div class="vocab-container">
-        <a href="index.html" class="back-link">← Back to Dictionary</a>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <a href="index.html" class="back-link">← Back to Dictionary</a>
+            <a href="flashcards.html" style="display: inline-block; padding: 10px 20px; background-color: #9c27b0; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">📚 Study Flashcards</a>
+        </div>
         
         <h1>German Vocabulary - CSV Viewer</h1>
         
@@ -205,10 +208,10 @@
         const pageSelect = document.getElementById('pageSelect');
         const tableWrapper = document.getElementById('tableWrapper');
 
-        // Generate page options (1-18)
+        // Generate page options (1-25)
         function generatePageOptions() {
             pageSelect.innerHTML = '<option value="">Select a page...</option>';
-            for (let i = 1; i <= 18; i++) {
+            for (let i = 1; i <= 25; i++) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = `Page ${i} (lws-${i})`;

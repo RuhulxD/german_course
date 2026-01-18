@@ -3,49 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Dictionary & Translator</title>
+    <title>German Course - Home</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .home-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .home-title {
+            font-size: 48px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .home-subtitle {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 50px;
+        }
+
+        .nav-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .nav-card {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-color: #4CAF50;
+        }
+
+        .nav-card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .nav-card-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .nav-card-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .card-flashcards {
+            border-color: #9c27b0;
+        }
+
+        .card-flashcards:hover {
+            border-color: #7b1fa2;
+        }
+
+        .card-vocabulary {
+            border-color: #4285f4;
+        }
+
+        .card-vocabulary:hover {
+            border-color: #357ae8;
+        }
+
+        .card-grammar {
+            border-color: #ff9800;
+        }
+
+        .card-grammar:hover {
+            border-color: #f57c00;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Word Dictionary & Translator</h1>
+    <div class="home-container">
+        <h1 class="home-title">German Course</h1>
+        <p class="home-subtitle">Learn German vocabulary, grammar, and practice with flashcards</p>
         
-        <div style="text-align: center; margin-bottom: 20px;">
-            <a href="vocabulary.html" style="display: inline-block; padding: 10px 20px; background-color: #4285f4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">View Vocabulary Tables</a>
-        </div>
-        
-        <div class="nav-bar" id="navBar">
-            <!-- Navigation links will be generated dynamically -->
-        </div>
-        
-        <div class="input-section">
-            <textarea 
-                id="textInput" 
-                placeholder="Enter your text here... The words will be extracted and displayed below."
-            ></textarea>
-        </div>
-
-        <div class="word-list-section">
-            <div class="word-list-title">Clickable Words:</div>
-            <div id="wordList" class="empty-state">
-                Words will appear here after you type some text...
-            </div>
-        </div>
-
-        <div class="translation-box">
-            <div class="iframe-title">Translation (German → Bengali)</div>
-            <div id="translationContent" class="translation-content">
-                <div class="empty-state">Click a word above to see translation...</div>
-            </div>
-        </div>
-
-        <div class="iframe-wrapper">
-            <div class="iframe-title">dict.cc - German-English Dictionary</div>
-            <iframe id="dictFrame" src="about:blank"></iframe>
+        <div class="nav-cards">
+            <a href="flashcards.html" class="nav-card card-flashcards">
+                <div class="nav-card-icon">📚</div>
+                <div class="nav-card-title">Flashcards</div>
+                <div class="nav-card-description">
+                    Study German words with interactive flashcards. Practice vocabulary from all pages or customize your study set.
+                </div>
+            </a>
+            
+            <a href="vocabulary.html" class="nav-card card-vocabulary">
+                <div class="nav-card-icon">📖</div>
+                <div class="nav-card-title">Vocabulary</div>
+                <div class="nav-card-description">
+                    Browse German vocabulary in table format. View words with translations, pronunciations, and example sentences.
+                </div>
+            </a>
+            
+            <a href="markdown-viewer.html?file=grammar/1.md" class="nav-card card-grammar">
+                <div class="nav-card-icon">📝</div>
+                <div class="nav-card-title">Grammar</div>
+                <div class="nav-card-description">
+                    Learn German pronunciation rules and grammar. Study pronunciation patterns and language rules.
+                </div>
+            </a>
         </div>
     </div>
-
-    <script src="script.js"></script>
 </body>
 </html>
-

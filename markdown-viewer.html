@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .viewer-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: #45a049;
+        }
+
+        .markdown-content {
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            line-height: 1.8;
+        }
+
+        .markdown-content h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .markdown-content h2 {
+            color: #4CAF50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+
+        .markdown-content h3 {
+            color: #666;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .markdown-content h4 {
+            color: #888;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .markdown-content p {
+            margin: 15px 0;
+            color: #333;
+        }
+
+        .markdown-content code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #d63384;
+        }
+
+        .markdown-content pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .markdown-content table th,
+        .markdown-content table td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .markdown-content table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .markdown-content table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .markdown-content table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        .markdown-content li {
+            margin: 8px 0;
+            color: #333;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #4CAF50;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #666;
+            font-style: italic;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 2px solid #ddd;
+            margin: 30px 0;
+        }
+
+        .markdown-content a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content strong {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc3545;
+            font-size: 18px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+        }
+
+        .file-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .file-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+
+        .file-selector select {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .file-selector select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer-container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        
+        <h1>Markdown Viewer</h1>
+        
+        <div class="file-selector">
+            <label for="fileSelect">Select File:</label>
+            <select id="fileSelect">
+                <option value="">Select a markdown file...</option>
+                <option value="grammar/1.md">Grammar Rules (grammar/1.md)</option>
+            </select>
+        </div>
+
+        <div id="markdownContainer">
+            <div class="loading">Select a file to view...</div>
+        </div>
+    </div>
+
+    <script>
+        const fileSelect = document.getElementById('fileSelect');
+        const markdownContainer = document.getElementById('markdownContainer');
+
+        // Configure marked options
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            mangle: false
+        });
+
+        // Load markdown file
+        async function loadMarkdown(filePath) {
+            if (!filePath) {
+                markdownContainer.innerHTML = '<div class="loading">Select a file to view...</div>';
+                return;
+            }
+
+            markdownContainer.innerHTML = '<div class="loading">Loading markdown file...</div>';
+
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) {
+                    throw new Error(`File not found: ${filePath}`);
+                }
+
+                const markdownText = await response.text();
+                
+                // Convert markdown to HTML
+                const html = marked.parse(markdownText);
+                
+                // Display the HTML
+                markdownContainer.innerHTML = `<div class="markdown-content">${html}</div>`;
+            } catch (error) {
+                console.error('Error loading markdown:', error);
+                markdownContainer.innerHTML = `
+                    <div class="error">
+                        <strong>Error loading markdown file:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Event listener for file selection
+        fileSelect.addEventListener('change', (e) => {
+            loadMarkdown(e.target.value);
+        });
+
+        // Check URL parameter for file
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileParam = urlParams.get('file');
+        if (fileParam) {
+            fileSelect.value = fileParam;
+            loadMarkdown(fileParam);
+        }
+    </script>
+</body>
+</html>
