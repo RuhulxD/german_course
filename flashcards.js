@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function generatePageOptions() {
     const pageSelect = document.getElementById('pageSelect');
     pageSelect.innerHTML = '<option value="">Select Page...</option>';
-    for (let i = 1; i <= 25; i++) {
+    for (let i = 1; i <= 32; i++) {
         const option = document.createElement('option');
         option.value = i;
         option.textContent = `Page ${i} (lws-${i})`;
@@ -135,7 +135,7 @@ async function loadCardsFromPage(pageNum) {
 async function loadCardsFromAllPages() {
     cards = [];
     
-    for (let i = 1; i <= 25; i++) {
+    for (let i = 1; i <= 32; i++) {
         try {
             const response = await fetch(`lws/csv/${i}.csv`);
             if (response.ok) {
