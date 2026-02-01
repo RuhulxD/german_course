@@ -181,6 +181,55 @@
         .action-cell {
             white-space: nowrap;
         }
+
+        .page-nav {
+            margin-top: 24px;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-nav.hidden {
+            display: none;
+        }
+
+        .page-nav-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .page-nav-btn:hover:not(:disabled) {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .page-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #999;
+            background-color: #999;
+        }
+
+        .page-nav-label {
+            font-size: 16px;
+            color: #333;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -202,16 +251,27 @@
         <div class="table-wrapper" id="tableWrapper">
             <div class="loading">Select a page to view vocabulary...</div>
         </div>
+
+        <div class="page-nav hidden" id="pageNav">
+            <button type="button" class="page-nav-btn" id="prevBtn">← Prev</button>
+            <span class="page-nav-label" id="pageLabel">Page 1 of 38</span>
+            <button type="button" class="page-nav-btn" id="nextBtn">Next →</button>
+        </div>
     </div>
 
     <script>
         const pageSelect = document.getElementById('pageSelect');
         const tableWrapper = document.getElementById('tableWrapper');
+        const pageNav = document.getElementById('pageNav');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageLabel = document.getElementById('pageLabel');
+        const MAX_PAGE = 38;
 
-        // Generate page options (1-32)
+        // Generate page options (1-38)
         function generatePageOptions() {
             pageSelect.innerHTML = '<option value="">Select a page...</option>';
-            for (let i = 1; i <= 32; i++) {
+            for (let i = 1; i <= 38; i++) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = `Page ${i} (lws-${i})`;
@@ -321,10 +381,22 @@
             tableWrapper.innerHTML = html;
         }
 
+        function updatePageNav(pageNumber) {
+            if (!pageNumber || pageNumber < 1 || pageNumber > MAX_PAGE) {
+                pageNav.classList.add('hidden');
+                return;
+            }
+            pageNav.classList.remove('hidden');
+            pageLabel.textContent = `Page ${pageNumber} of ${MAX_PAGE}`;
+            prevBtn.disabled = pageNumber <= 1;
+            nextBtn.disabled = pageNumber >= MAX_PAGE;
+        }
+
         // Load CSV file
         async function loadCSV(pageNumber) {
             if (!pageNumber) {
                 tableWrapper.innerHTML = '<div class="loading">Select a page to view vocabulary...</div>';
+                pageNav.classList.add('hidden');
                 return;
             }
 
@@ -339,15 +411,33 @@
                 const csvText = await response.text();
                 const data = parseCSV(csvText);
                 createTable(data);
+                updatePageNav(parseInt(pageNumber, 10));
             } catch (error) {
                 console.error('Error loading CSV:', error);
                 tableWrapper.innerHTML = `<div class="error">Error loading CSV file: ${error.message}</div>`;
+                pageNav.classList.add('hidden');
             }
         }
 
         // Event listener for page selection
         pageSelect.addEventListener('change', (e) => {
             loadCSV(e.target.value);
+        });
+
+        prevBtn.addEventListener('click', () => {
+            const current = parseInt(pageSelect.value, 10);
+            if (current > 1) {
+                pageSelect.value = current - 1;
+                loadCSV(pageSelect.value);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const current = parseInt(pageSelect.value, 10);
+            if (current < MAX_PAGE) {
+                pageSelect.value = current + 1;
+                loadCSV(pageSelect.value);
+            }
         });
 
         // Check URL parameter for page

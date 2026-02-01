@@ -1,82 +1,83 @@
-# German Course - Word Dictionary & Translator
+# German Course
 
-A web-based German language learning tool that helps you extract, look up, and translate German words from text. Perfect for students learning German who want quick access to dictionary definitions and translations.
+A web-based German language learning project with vocabulary lists, flashcards, and grammar notes. Content is aimed at learners who use **German, Bangla (Bengali), and English**.
+
+## Overview
+
+- **Home** (`index.html`) – Hub with links to Flashcards, Vocabulary, and Grammar.
+- **Flashcards** (`flashcards.html` + `flashcards.js`) – Study words by page or all pages; optional “custom words” mode.
+- **Vocabulary** (`vocabulary.html`) – Browse words in tables by page (1–38) with German, Bangla pronunciation/meaning, English meaning, and example sentences.
+- **Grammar** – Markdown viewer (`markdown-viewer.html`) for `grammar/1.md` and other docs; extra notes in `other/*.md`.
+
+Vocabulary data lives in **CSV files** under `lws/csv/` (one file per “page”), generated from or aligned with raw word lists in `lws/pages/`.
 
 ## Features
 
-- **Text Input & Word Extraction**: Paste or type German text and automatically extract all unique words
-- **Interactive Word Buttons**: Click on any extracted word to look it up
-- **Dictionary Integration**: Integrated with [dict.cc](https://www.dict.cc/) for German-English dictionary lookups displayed in an embedded iframe
-- **Translation Support**: Quick access to Google Translate for German → Bengali translations
-- **Word Lists**: Pre-configured word lists stored in `lws/pages/` directory for structured learning
-
-## Usage
-
-1. **Open the Application**
-   - Simply open `index.html` in your web browser
-   - No server or installation required
-
-2. **Extract Words**
-   - Type or paste German text into the text area
-   - Words are automatically extracted and displayed as clickable buttons below
-
-3. **Look Up Words**
-   - Click any word button to:
-     - View the word's definition in the dict.cc dictionary (displayed in the iframe below)
-     - Enable the Google Translate button for German → Bengali translation
-
-4. **Translate Words**
-   - After clicking a word, click the "Translate" button to open Google Translate in a new tab
-   - The translation will be set to German → Bengali
+- **Flashcards**: Study by single page, all pages (lazy-loaded), or a custom word list; flip cards, progress, keyboard/swipe.
+- **Vocabulary table**: Pick a page (1–38), see full CSV in a table with links to Google Translate, dict.cc, Wiktionary.
+- **Grammar / notes**: View Markdown (e.g. pronunciation, grammar) in the browser.
+- **Word data**: Each CSV row has German word, Bangla pronunciation, Bangla meaning, English meaning, and a German example sentence.
 
 ## Project Structure
 
 ```
 german_course/
-├── index.html          # Main application file
+├── index.html              # Home: links to Flashcards, Vocabulary, Grammar
+├── flashcards.html         # Flashcard UI
+├── flashcards.js           # Flashcard logic, loads lws/csv/{n}.csv, totalPages = 38
+├── vocabulary.html        # Vocabulary table, page selector 1–38
+├── markdown-viewer.html    # Renders Markdown (e.g. grammar/1.md)
+├── grammar.html            # (if present) Grammar entry
+├── script.js               # Text extraction + MyMemory DE→BN translation (standalone)
+├── styles.css              # Shared styles
+├── grammar/
+│   └── 1.md                # Grammar / pronunciation Markdown
+├── other/                  # Extra Markdown notes (alphabet, pronouns, verbs, etc.)
 ├── lws/
-│   └── pages/         # Word list files
-│       ├── 1          # Word list 1
-│       └── 2          # Word list 2
-└── README.md          # This file
+│   ├── pages/              # Raw word lists (one file per page: 1, 2, … 40)
+│   │   ├── 1, 2, … 38, 39, 40
+│   └── csv/                # Vocabulary CSVs used by app (1–38, no 26)
+│       ├── 1.csv … 25.csv, 27.csv … 38.csv
+└── README.md
 ```
 
-### Word Lists (`lws/pages/`)
+## Vocabulary Data (CSV)
 
-The `lws/pages/` directory contains numbered files with German word lists. Each file contains one word per line, making it easy to manage and organize vocabulary for different lessons or topics.
+- **Location**: `lws/csv/{page}.csv` (e.g. `lws/csv/33.csv`).
+- **Columns** (header in first row):
+  - `German Word`
+  - `Bangla Pronunciation` (phonetic Bengali script)
+  - `Bangla Meaning` (Bengali translation)
+  - `English Meaning`
+  - `German sentence` (example sentence)
 
-## Technologies Used
+CSVs are UTF-8. The app supports pages **1–38**; `flashcards.js` uses `totalPages = 38`, and the vocabulary page dropdown is 1–38.
 
-- **HTML5**: Structure and semantic markup
-- **CSS3**: Styling and responsive design
-- **JavaScript (Vanilla)**: Word extraction, DOM manipulation, and event handling
-- **External APIs**:
-  - [dict.cc](https://www.dict.cc/): German-English dictionary
-  - [Google Translate](https://translate.google.com/): Translation service
+## Raw Word Lists (`lws/pages/`)
 
-## How It Works
+- Numbered files without extension (e.g. `1`, `33`).
+- One vocabulary item per line (or split across lines with continuation, e.g. verb + conjugation).
+- Used as the source when generating or updating CSVs; the app itself reads only `lws/csv/*.csv`.
 
-1. **Word Extraction**: The application splits input text by whitespace, removes punctuation, and filters out duplicates to create a list of unique words
-2. **Word Display**: Extracted words are displayed as clickable buttons in a responsive grid layout
-3. **Dictionary Lookup**: Clicking a word updates the dict.cc iframe URL to search for that specific word
-4. **Translation**: The Google Translate button opens a new tab with the selected word pre-filled for translation
+## How to Run
 
-## Browser Compatibility
+- Open `index.html` in a browser (or serve the folder with any static server).
+- No build step; no backend required.
 
-This application works in all modern web browsers that support:
-- ES6 JavaScript features
-- Iframe embedding
-- CSS Grid/Flexbox
+## Adding or Updating Vocabulary
 
-## Future Enhancements
+1. **Raw list**: Edit or add a file under `lws/pages/` (e.g. `39`).
+2. **CSV**: Add or update `lws/csv/{n}.csv` with the five columns above.
+3. **App**: If you add pages beyond 38, update:
+   - `flashcards.js`: `totalPages` and the loop in `generatePageOptions()`
+   - `vocabulary.html`: the loop that builds the page dropdown (e.g. `1..38` → new max).
 
-Potential improvements could include:
-- Support for multiple translation languages
-- Word list import/export functionality
-- History of looked-up words
-- Pronunciation audio integration
-- Custom word list creation interface
+## Technologies
+
+- HTML5, CSS3, vanilla JavaScript.
+- External: dict.cc (iframe), Google Translate (links), MyMemory API (in `script.js` for DE→BN).
+- Markdown: rendered in-browser (e.g. marked.js in markdown-viewer).
 
 ## License
 
-This project is open source and available for educational purposes.
+Open source for educational use.
