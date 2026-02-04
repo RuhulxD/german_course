@@ -7,7 +7,7 @@ let currentCard = null; // Current card object
 let cardStatuses = {}; // Track known/unknown/review status
 let isFlipped = false;
 let loadedPages = new Set(); // Track which pages have been loaded
-let totalPages = 38; // Total number of pages available
+let totalPages = 42; // Total number of pages available
 let isLoadingMore = false; // Prevent concurrent loading
 let isSelectingCard = false; // Prevent concurrent card selection
 
