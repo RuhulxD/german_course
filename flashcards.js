@@ -1,43 +1,60 @@
-// Flashcard application state
-let cards = []; // All loaded cards
-let availableCards = []; // Cards available for random selection
-let shownCards = []; // Track recently shown cards to avoid immediate repeats
-let totalCardsShown = 0; // Total count of cards shown (for progress display)
-let currentCard = null; // Current card object
-let cardStatuses = {}; // Track known/unknown/review status
-let isFlipped = false;
-let loadedPages = new Set(); // Track which pages have been loaded
-let totalPages = 52; // Total number of pages available
-let isLoadingMore = false; // Prevent concurrent loading
-let isSelectingCard = false; // Prevent concurrent card selection
+// books, allPages, parseCSV come from config.js
 
-// Initialize page
+// Flashcard application state
+let cards = [];
+let availableCards = [];
+let shownCards = [];
+let totalCardsShown = 0;
+let currentCard = null;
+let cardStatuses = {};
+let isFlipped = false;
+let loadedPages = new Set();
+let totalPages = allPages.length;
+let isLoadingMore = false;
+let isSelectingCard = false;
+let currentQuizMode = 'normal';
+let currentFilter = 'all';
+
+// Session tracking
+let sessionStartTime = null;
+let sessionCardsStudied = 0;
+let sessionTimerInterval = null;
+
+// Progress history
+let progressHistory = {};
+
+// Initialize
 document.addEventListener('DOMContentLoaded', function() {
     generatePageOptions();
     setupModeSelector();
     loadProgress();
+    loadProgressHistory();
     setupKeyboardShortcuts();
     setupSwipeGestures();
+    renderProgressHistory();
 });
 
-// Generate page options for dropdown
 function generatePageOptions() {
     const pageSelect = document.getElementById('pageSelect');
     pageSelect.innerHTML = '<option value="">Select Page...</option>';
-    for (let i = 1; i <= totalPages; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Page ${i} (lws-${i})`;
-        pageSelect.appendChild(option);
-    }
+    books.forEach(book => {
+        const group = document.createElement('optgroup');
+        group.label = book.name;
+        book.pages.forEach(p => {
+            const option = document.createElement('option');
+            option.value = `${book.folder}/${p}`;
+            option.textContent = `Page ${p}`;
+            group.appendChild(option);
+        });
+        pageSelect.appendChild(group);
+    });
 }
 
-// Setup mode selector to show/hide custom input
 function setupModeSelector() {
     const studyMode = document.getElementById('studyMode');
-    const customInputSection = document.getElementById('customInputSection');
+    const customInputSection = document.getElementById('customSection');
     const pageSelect = document.getElementById('pageSelect');
-    
+
     studyMode.addEventListener('change', function() {
         if (this.value === 'custom') {
             customInputSection.classList.remove('hidden');
@@ -47,60 +64,27 @@ function setupModeSelector() {
             pageSelect.style.display = 'inline-block';
         }
     });
+
+    document.getElementById('quizMode').addEventListener('change', function() {
+        currentQuizMode = this.value;
+        if (currentCard) displayCard();
+    });
+
+    document.getElementById('filterMode').addEventListener('change', function() {
+        currentFilter = this.value;
+    });
 }
 
-// Parse CSV text into array of objects
-function parseCSV(csvText) {
-    const lines = csvText.trim().split('\n');
-    if (lines.length < 2) return [];
+// --- Card Loading ---
 
-    const headers = lines[0].split(',');
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        // Handle CSV with commas inside quoted fields
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        values.push(current.trim());
-
-        if (values.length === headers.length) {
-            const row = {};
-            headers.forEach((header, index) => {
-                row[header.trim()] = values[index] || '';
-            });
-            data.push(row);
-        }
-    }
-
-    return data;
-}
-
-// Load cards based on selected mode
 async function loadCards() {
     const studyMode = document.getElementById('studyMode').value;
-    
+    currentQuizMode = document.getElementById('quizMode').value;
+    currentFilter = document.getElementById('filterMode').value;
+
     if (studyMode === 'page') {
         const pageNum = document.getElementById('pageSelect').value;
-        if (!pageNum) {
-            alert('Please select a page');
-            return;
-        }
+        if (!pageNum) { alert('Please select a page'); return; }
         await loadCardsFromPage(pageNum);
     } else if (studyMode === 'all') {
         await loadCardsFromAllPages();
@@ -109,189 +93,154 @@ async function loadCards() {
     }
 }
 
-// Load cards from a specific page
+function mapRowToCard(row) {
+    return {
+        word: row['German Word'] || '',
+        pronunciation: row['Bangla Pronunciation'] || '',
+        banglaMeaning: row['Bangla Meaning'] || '',
+        englishMeaning: row['English Meaning'] || '',
+        sentence: row['German sentence'] || ''
+    };
+}
+
 async function loadCardsFromPage(pageNum) {
     try {
         const response = await fetch(`lws/csv/${pageNum}.csv`);
-        if (!response.ok) {
-            throw new Error(`File not found: lws/csv/${pageNum}.csv`);
-        }
-        const csvText = await response.text();
-        const data = parseCSV(csvText);
-        
-        if (data.length === 0) {
-            alert('No data found in CSV file');
-            return;
-        }
-        
-        cards = data.map(row => ({
-            word: row['German Word'] || '',
-            pronunciation: row['Bangla Pronunciation'] || '',
-            banglaMeaning: row['Bangla Meaning'] || '',
-            englishMeaning: row['English Meaning'] || '',
-            sentence: row['German sentence'] || ''
-        })).filter(card => card.word.trim() !== '');
-        
-        // For single page mode, use all cards as available
-        availableCards = [...cards];
-        shuffleArray(availableCards);
+        if (!response.ok) throw new Error(`File not found: lws/csv/${pageNum}.csv`);
+        const data = parseCSV(await response.text());
+        if (data.length === 0) { alert('No data found'); return; }
+
+        cards = data.map(mapRowToCard).filter(c => c.word.trim() !== '');
+        availableCards = applyFilter([...cards]);
+        applySRSWeighting();
         shownCards = [];
         currentCard = null;
         loadedPages.clear();
-        loadedPages.add(parseInt(pageNum));
-        
+        loadedPages.add(pageNum);
         initializeFlashcards();
     } catch (error) {
-        console.error('Error loading CSV:', error);
-        alert(`Error loading CSV file: ${error.message}`);
+        alert(`Error: ${error.message}`);
     }
 }
 
-// Load cards from all pages (lazy loading: 2 pages at a time)
 async function loadCardsFromAllPages() {
     cards = [];
     availableCards = [];
     shownCards = [];
-    totalCardsShown = 0; // Reset counter
+    totalCardsShown = 0;
     loadedPages.clear();
     currentCard = null;
-    
-    // Load first 2 pages
     await loadNextPages(2);
-    
-    if (cards.length === 0) {
-        alert('No cards found');
-        return;
-    }
-    
+    if (cards.length === 0) { alert('No cards found'); return; }
     initializeFlashcards();
 }
 
-// Load next N pages (default 2)
 async function loadNextPages(count = 2) {
     if (isLoadingMore) return;
-    
     isLoadingMore = true;
+
     const pagesToLoad = [];
-    
-    // Find next pages to load
-    for (let i = 1; i <= totalPages && pagesToLoad.length < count; i++) {
-        if (!loadedPages.has(i)) {
-            pagesToLoad.push(i);
-        }
+    for (let i = 0; i < allPages.length && pagesToLoad.length < count; i++) {
+        if (!loadedPages.has(allPages[i])) pagesToLoad.push(allPages[i]);
     }
-    
-    if (pagesToLoad.length === 0) {
-        isLoadingMore = false;
-        updateProgress();
-        return; // All pages loaded
-    }
-    
-    console.log(`Loading pages: ${pagesToLoad.join(', ')}`);
-    
-    // Load pages in parallel
-    const loadPromises = pagesToLoad.map(async (pageNum) => {
+
+    if (pagesToLoad.length === 0) { isLoadingMore = false; updateProgress(); return; }
+
+    const results = await Promise.all(pagesToLoad.map(async (pagePath) => {
         try {
-            const response = await fetch(`lws/csv/${pageNum}.csv`);
+            const response = await fetch(`lws/csv/${pagePath}.csv`);
             if (response.ok) {
-                const csvText = await response.text();
-                const data = parseCSV(csvText);
-                
-                const pageCards = data.map(row => ({
-                    word: row['German Word'] || '',
-                    pronunciation: row['Bangla Pronunciation'] || '',
-                    banglaMeaning: row['Bangla Meaning'] || '',
-                    englishMeaning: row['English Meaning'] || '',
-                    sentence: row['German sentence'] || ''
-                })).filter(card => card.word.trim() !== '');
-                
-                loadedPages.add(pageNum);
-                console.log(`Loaded page ${pageNum}: ${pageCards.length} cards`);
+                const pageCards = parseCSV(await response.text())
+                    .map(mapRowToCard).filter(c => c.word.trim() !== '');
+                loadedPages.add(pagePath);
                 return pageCards;
             }
-        } catch (error) {
-            console.error(`Error loading page ${pageNum}:`, error);
-        }
+        } catch (e) {}
         return [];
-    });
-    
-    const results = await Promise.all(loadPromises);
+    }));
+
     const newCards = results.flat();
-    
-    // Add new cards to the pool
     cards = cards.concat(newCards);
-    availableCards = availableCards.concat(newCards);
-    
-    // Shuffle available cards
-    shuffleArray(availableCards);
-    
-    console.log(`Total cards now: ${cards.length}, Available: ${availableCards.length}, Pages loaded: ${loadedPages.size}`);
-    
+    availableCards = availableCards.concat(applyFilter(newCards));
+    applySRSWeighting();
     isLoadingMore = false;
     updateProgress();
     updateStatistics();
 }
 
-// Load custom words from textarea
+// Filter cards by status
+function applyFilter(cardList) {
+    if (currentFilter === 'all') return cardList;
+    return cardList.filter(card => {
+        const status = cardStatuses[card.word];
+        if (currentFilter === 'unknown') return status === 'unknown';
+        if (currentFilter === 'review') return status === 'review';
+        if (currentFilter === 'unrated') return !status;
+        if (currentFilter === 'unknown+review') return status === 'unknown' || status === 'review';
+        return true;
+    });
+}
+
+// SRS weighting
+function applySRSWeighting() {
+    const weighted = [];
+    availableCards.forEach(card => {
+        const status = cardStatuses[card.word];
+        if (status === 'unknown') {
+            weighted.push(card, card, card);
+        } else if (status === 'review') {
+            weighted.push(card, card);
+        } else if (status === 'known') {
+            if (Math.random() < 0.5) weighted.push(card);
+        } else {
+            weighted.push(card);
+        }
+    });
+
+    shuffleArray(weighted);
+    const seen = new Set();
+    availableCards = weighted.filter(card => {
+        if (seen.has(card.word)) return false;
+        seen.add(card.word);
+        return true;
+    });
+}
+
 async function loadCustomWords() {
     const customInput = document.getElementById('customWordsInput').value.trim();
-    if (!customInput) {
-        alert('Please enter some words');
-        return;
-    }
-    
+    if (!customInput) { alert('Please enter some words'); return; }
+
     const words = customInput.split('\n').map(w => w.trim()).filter(w => w);
-    
-    // Load all cards first (lazy loading)
     cards = [];
     availableCards = [];
     shownCards = [];
     loadedPages.clear();
     currentCard = null;
-    
-    // Load all pages for custom words mode
-    for (let i = 1; i <= totalPages; i++) {
+
+    for (const pagePath of allPages) {
         try {
-            const response = await fetch(`lws/csv/${i}.csv`);
+            const response = await fetch(`lws/csv/${pagePath}.csv`);
             if (response.ok) {
-                const csvText = await response.text();
-                const data = parseCSV(csvText);
-                
-                const pageCards = data.map(row => ({
-                    word: row['German Word'] || '',
-                    pronunciation: row['Bangla Pronunciation'] || '',
-                    banglaMeaning: row['Bangla Meaning'] || '',
-                    englishMeaning: row['English Meaning'] || '',
-                    sentence: row['German sentence'] || ''
-                })).filter(card => {
-                    const wordWithoutArticle = card.word.replace(/^(der|die|das)\s+/i, '').trim().toLowerCase();
-                    return card.word.trim() !== '' && words.some(w => 
-                        wordWithoutArticle === w.toLowerCase() || 
-                        card.word.toLowerCase().includes(w.toLowerCase())
-                    );
-                });
-                
+                const pageCards = parseCSV(await response.text())
+                    .map(mapRowToCard)
+                    .filter(card => {
+                        const w = card.word.replace(/^(der|die|das)\s+/i, '').trim().toLowerCase();
+                        return card.word.trim() !== '' && words.some(q =>
+                            w === q.toLowerCase() || card.word.toLowerCase().includes(q.toLowerCase())
+                        );
+                    });
                 cards = cards.concat(pageCards);
-                loadedPages.add(i);
+                loadedPages.add(pagePath);
             }
-        } catch (error) {
-            console.error(`Error loading page ${i}:`, error);
-        }
+        } catch (e) {}
     }
-    
-    if (cards.length === 0) {
-        alert('No matching words found');
-        return;
-    }
-    
-    // Use filtered cards as available
+
+    if (cards.length === 0) { alert('No matching words found'); return; }
     availableCards = [...cards];
     shuffleArray(availableCards);
-    
     initializeFlashcards();
 }
 
-// Shuffle array
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -299,326 +248,381 @@ function shuffleArray(array) {
     }
 }
 
-// Initialize flashcards display
+// --- Fullscreen Mode ---
+
+function enterFullscreen() {
+    document.body.classList.add('fullscreen-active');
+}
+
+function exitFullscreen() {
+    document.body.classList.remove('fullscreen-active');
+    // Scroll to flashcard area so user sees their progress
+    document.getElementById('flashcardArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+// --- Session Management ---
+
+function startSession() {
+    sessionStartTime = Date.now();
+    sessionCardsStudied = 0;
+    if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+    sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+    updateSessionDisplay();
+}
+
+function updateSessionTimer() {
+    if (!sessionStartTime) return;
+    const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const min = Math.floor(elapsed / 60);
+    const sec = elapsed % 60;
+    const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
+    // Sync both fullscreen and legacy timer elements
+    const el = document.getElementById('sessionTimer');
+    const elLegacy = document.getElementById('sessionTimerLegacy');
+    if (el) el.textContent = timeStr;
+    if (elLegacy) elLegacy.textContent = timeStr;
+}
+
+function updateSessionDisplay() {
+    const txt = `${sessionCardsStudied} cards`;
+    const txtLong = `${sessionCardsStudied} cards this session`;
+    const el = document.getElementById('sessionCards');
+    const elLegacy = document.getElementById('sessionCardsLegacy');
+    if (el) el.textContent = txt;
+    if (elLegacy) elLegacy.textContent = txtLong;
+}
+
+// --- Flashcard Core ---
+
 function initializeFlashcards() {
     if (cards.length === 0) return;
-    
     isFlipped = false;
     shownCards = [];
-    totalCardsShown = 0; // Reset total shown counter
-    
+    totalCardsShown = 0;
+
+    // Check if filter returned no cards
+    if (availableCards.length === 0) {
+        alert(`No cards match the "${currentFilter}" filter. Try "All cards".`);
+        return;
+    }
+
     document.getElementById('flashcardArea').classList.remove('hidden');
-    
-    // Setup swipe gestures now that flashcard area is visible
+    enterFullscreen();
     setupSwipeGestures();
-    
+    startSession();
     selectRandomCard();
     updateProgress();
     updateStatistics();
+    renderProgressHistory();
 }
 
-// Helper function to check if a card is already in the array (by word)
 function cardExistsInArray(card, array) {
     return array.some(c => c.word === card.word);
 }
 
-// Select a random card from available cards
 function selectRandomCard() {
-    // Prevent concurrent calls
-    if (isSelectingCard) {
-        console.log('Card selection already in progress, skipping...');
-        return;
-    }
-    
+    if (isSelectingCard) return;
     isSelectingCard = true;
-    
+
     try {
-        // Check if we need to load more pages BEFORE selecting (if less than 20 cards remaining)
-        // This ensures we load proactively before running out
         if (availableCards.length < 20 && loadedPages.size < totalPages && !isLoadingMore) {
             loadNextPages(2);
         }
-        
+
         if (availableCards.length === 0) {
-            // Try to load more pages if available
             if (loadedPages.size < totalPages && !isLoadingMore) {
                 loadNextPages(2).then(() => {
-                    if (availableCards.length > 0) {
-                        isSelectingCard = false; // Reset before recursive call
-                        selectRandomCard();
-                    } else {
-        // All pages loaded, recycle shown cards
-        if (shownCards.length > 0) {
-            availableCards = [...shownCards];
-            shuffleArray(availableCards);
-            shownCards = [];
-            // Don't reset totalCardsShown - keep counting total shown
-            isSelectingCard = false; // Reset before recursive call
-            selectRandomCard();
-        } else {
-            isSelectingCard = false;
-        }
-                    }
-                }).catch(error => {
-                    console.error('Error loading next pages:', error);
                     isSelectingCard = false;
-                });
-            } else if (shownCards.length > 0) {
-                // All pages loaded, recycle shown cards
-                availableCards = [...shownCards];
-                shuffleArray(availableCards);
-                shownCards = [];
-                // Don't reset totalCardsShown - keep counting total shown
-                isSelectingCard = false; // Reset before recursive call
-                selectRandomCard();
+                    if (availableCards.length > 0) selectRandomCard();
+                    else recycleCards();
+                }).catch(() => { isSelectingCard = false; });
             } else {
-                console.error('No cards available and no shown cards to recycle');
-                isSelectingCard = false;
+                recycleCards();
             }
             return;
         }
-        
-        // Select random card from available
-        if (availableCards.length === 0) {
-            console.error('Available cards is empty after processing');
-            isSelectingCard = false;
-            return;
-        }
-        
-        const randomIndex = Math.floor(Math.random() * availableCards.length);
-        currentCard = availableCards[randomIndex];
-        
-        if (!currentCard) {
-            console.error('Failed to select a card');
-            isSelectingCard = false;
-            return;
-        }
-        
-        // Move selected card from available to shown list
-        availableCards.splice(randomIndex, 1);
+
+        const idx = Math.floor(Math.random() * availableCards.length);
+        currentCard = availableCards[idx];
+        if (!currentCard) { isSelectingCard = false; return; }
+
+        availableCards.splice(idx, 1);
         shownCards.push(currentCard);
-        totalCardsShown++; // Increment total shown counter
-        
-        // Remove cards that were recently shown (keep last 6. Ja-Nein Fragen.md to avoid immediate repeats)
-        // Only recycle back to availableCards when we have very few cards left
+        totalCardsShown++;
+
         if (shownCards.length > 6) {
             const removed = shownCards.shift();
-            // Only add back to availableCards if we're running low (less than 10 cards)
-            // This prevents constant recycling and ensures cards are actually "used up"
             if (availableCards.length < 10 && loadedPages.size >= totalPages) {
-                // Only recycle when all pages are loaded and we're running low
-                if (!cardExistsInArray(removed, availableCards)) {
-                    availableCards.push(removed);
-                }
+                if (!cardExistsInArray(removed, availableCards)) availableCards.push(removed);
             }
         }
-        
-        console.log(`Selected card: ${currentCard.word}, Available: ${availableCards.length}, Shown: ${totalCardsShown} (recent: ${shownCards.length})`);
-        
+
         displayCard();
         isSelectingCard = false;
-    } catch (error) {
-        console.error('Error in selectRandomCard:', error, error.stack);
+    } catch (e) {
+        console.error('selectRandomCard error:', e);
         isSelectingCard = false;
-        // Try to recover by selecting from available cards if any
-        if (availableCards.length > 0) {
-            try {
-                const randomIndex = Math.floor(Math.random() * availableCards.length);
-                currentCard = availableCards[randomIndex];
-                availableCards.splice(randomIndex, 1);
-                if (currentCard) {
-                    shownCards.push(currentCard);
-                    displayCard();
-                }
-            } catch (recoveryError) {
-                console.error('Error in recovery:', recoveryError);
-            }
-        }
     }
 }
 
-// Display current card
+function recycleCards() {
+    if (shownCards.length > 0) {
+        availableCards = applyFilter([...shownCards]);
+        if (availableCards.length === 0) availableCards = [...shownCards]; // fallback
+        applySRSWeighting();
+        shownCards = [];
+        isSelectingCard = false;
+        selectRandomCard();
+    } else {
+        isSelectingCard = false;
+    }
+}
+
+// --- Display ---
+
 function displayCard() {
-    try {
-        if (!currentCard) {
-            console.error('displayCard called but currentCard is null');
-            return;
-        }
-        
-        const flashcard = document.getElementById('flashcard');
-        if (!flashcard) {
-            console.error('Flashcard element not found');
-            return;
-        }
-    
-    // Reset flip state
+    if (!currentCard) return;
+    const flashcard = document.getElementById('flashcard');
+    if (!flashcard) return;
+
     isFlipped = false;
     flashcard.classList.remove('flipped');
-    
-    // Update front side - remove article (der, die, das) from display
-    const wordWithoutArticle = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
-    const cardWordEl = document.getElementById('cardWord');
-    if (cardWordEl) {
-        cardWordEl.textContent = wordWithoutArticle || currentCard.word;
+
+    const quizChoices = document.getElementById('quizChoices');
+    const markButtons = document.getElementById('markButtons');
+
+    // Update status badge
+    updateStatusBadge();
+    updateMarkButtonHighlight();
+
+    if (currentQuizMode === 'quiz') {
+        quizChoices.classList.remove('hidden');
+        markButtons.classList.add('hidden');
+        flashcard.onclick = null;
+        document.getElementById('cardWord').textContent = currentCard.banglaMeaning + ' / ' + currentCard.englishMeaning;
+        document.getElementById('cardHint').textContent = 'Choose the correct German word';
+        generateQuizChoices();
+    } else if (currentQuizMode === 'reverse') {
+        quizChoices.classList.add('hidden');
+        markButtons.classList.remove('hidden');
+        flashcard.onclick = flipCard;
+        document.getElementById('cardWord').textContent = currentCard.banglaMeaning + ' / ' + currentCard.englishMeaning;
+        document.getElementById('cardHint').textContent = 'Click to see the German word';
+    } else {
+        quizChoices.classList.add('hidden');
+        markButtons.classList.remove('hidden');
+        flashcard.onclick = flipCard;
+        const wordWithoutArticle = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
+        document.getElementById('cardWord').textContent = wordWithoutArticle || currentCard.word;
+        document.getElementById('cardHint').textContent = 'Click to flip';
     }
-    
-    // Update back side - show full word with article first
-    const cardFullWordEl = document.getElementById('cardFullWord');
-    if (cardFullWordEl) cardFullWordEl.textContent = currentCard.word || '-';
-    
-    const cardPronunciationEl = document.getElementById('cardPronunciation');
-    if (cardPronunciationEl) cardPronunciationEl.textContent = currentCard.pronunciation || '-';
-    
-    const cardBanglaMeaningEl = document.getElementById('cardBanglaMeaning');
-    if (cardBanglaMeaningEl) cardBanglaMeaningEl.textContent = currentCard.banglaMeaning || '-';
-    
-    const cardEnglishMeaningEl = document.getElementById('cardEnglishMeaning');
-    if (cardEnglishMeaningEl) cardEnglishMeaningEl.textContent = currentCard.englishMeaning || '-';
-    
-    const cardSentenceEl = document.getElementById('cardSentence');
-    if (cardSentenceEl) cardSentenceEl.textContent = currentCard.sentence || '-';
-    
-    // Update quick links
+
+    updateBackSide();
     updateQuickLinks(currentCard.word);
-    
-    // Update button states (always enabled for random selection)
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    if (prevBtn) prevBtn.disabled = false;
-    if (nextBtn) nextBtn.disabled = false;
-    
-        // Update progress immediately
-        updateProgress();
-    } catch (error) {
-        console.error('Error in displayCard:', error, error.stack);
-    }
+    document.getElementById('prevBtn').disabled = false;
+    document.getElementById('nextBtn').disabled = false;
+    updateProgress();
 }
 
-// Update quick links
+function updateStatusBadge() {
+    const badge = document.getElementById('cardBadge');
+    const status = cardStatuses[currentCard.word];
+    badge.className = 'badge';
+    if (status === 'known') { badge.classList.add('badge-known'); badge.textContent = 'KNOWN'; }
+    else if (status === 'unknown') { badge.classList.add('badge-unknown'); badge.textContent = 'UNKNOWN'; }
+    else if (status === 'review') { badge.classList.add('badge-review'); badge.textContent = 'REVIEW'; }
+    else { badge.classList.add('badge-new'); badge.textContent = 'NEW'; }
+}
+
+function updateMarkButtonHighlight() {
+    const status = cardStatuses[currentCard.word];
+    document.getElementById('btnKnown').classList.toggle('active-mark', status === 'known');
+    document.getElementById('btnUnknown').classList.toggle('active-mark', status === 'unknown');
+    document.getElementById('btnReview').classList.toggle('active-mark', status === 'review');
+}
+
+function updateBackSide() {
+    document.getElementById('cardFullWord').textContent = currentCard.word || '-';
+    document.getElementById('cardPronunciation').textContent = currentCard.pronunciation || '-';
+    document.getElementById('cardBanglaMeaning').textContent = currentCard.banglaMeaning || '-';
+    document.getElementById('cardEnglishMeaning').textContent = currentCard.englishMeaning || '-';
+    document.getElementById('cardSentence').textContent = currentCard.sentence || '-';
+}
+
+function generateQuizChoices() {
+    const quizChoices = document.getElementById('quizChoices');
+    const wrongCards = cards.filter(c => c.word !== currentCard.word);
+    shuffleArray(wrongCards);
+    const choices = [currentCard.word];
+    for (let i = 0; i < Math.min(3, wrongCards.length); i++) choices.push(wrongCards[i].word);
+    shuffleArray(choices);
+
+    quizChoices.innerHTML = choices.map(choice => {
+        const display = choice.replace(/^(der|die|das)\s+/i, '').trim();
+        return `<button class="quiz-choice-btn" onclick="checkQuizAnswer(this, '${choice.replace(/'/g, "\\'")}')">${display}</button>`;
+    }).join('');
+}
+
+function checkQuizAnswer(btn, selectedWord) {
+    const buttons = document.querySelectorAll('.quiz-choice-btn');
+    const isCorrect = selectedWord === currentCard.word;
+    const correctDisplay = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
+
+    buttons.forEach(b => {
+        b.disabled = true;
+        if (b.textContent === correctDisplay) b.classList.add('correct');
+    });
+
+    if (!isCorrect) { btn.classList.add('wrong'); markCard('unknown'); }
+    else { markCard('known'); }
+
+    setTimeout(() => {
+        document.getElementById('flashcard').classList.add('flipped');
+        setTimeout(() => nextCard(), 1500);
+    }, 500);
+}
+
 function updateQuickLinks(word) {
     const wordForLink = word.replace(/^(der|die|das)\s+/i, '').trim();
-    const encodedWord = encodeURIComponent(wordForLink);
-    
-    const quickLinks = document.getElementById('quickLinks');
-    quickLinks.innerHTML = `
-        <button class="audio-btn" onclick="playAudio(event)">🔊 Play Audio</button>
-        <a href="https://www.dict.cc/?s=${encodedWord}" target="_blank" class="quick-link link-dict">📖 Dict.cc</a>
-        <a href="https://en.wiktionary.org/wiki/${encodedWord}#German" target="_blank" class="quick-link link-wiki">📚 Wiktionary</a>
+    const enc = encodeURIComponent(wordForLink);
+    const sentence = currentCard.sentence || '';
+
+    let html = `
+        <button class="audio-btn" onclick="playAudio(event)">Audio</button>
+        <a href="https://www.dict.cc/?s=${enc}" target="_blank" class="quick-link">Dict.cc</a>
+        <a href="https://en.wiktionary.org/wiki/${enc}#German" target="_blank" class="quick-link">Wiktionary</a>
     `;
+    if (sentence) {
+        html += `<a href="https://translate.google.com/?sl=de&tl=en&text=${encodeURIComponent(sentence)}" target="_blank" class="quick-link">Translate</a>`;
+    }
+    document.getElementById('quickLinks').innerHTML = html;
 }
 
-// Flip card
+// --- Card Actions ---
+
 function flipCard() {
     const flashcard = document.getElementById('flashcard');
     isFlipped = !isFlipped;
     flashcard.classList.toggle('flipped');
+
+    // Auto-play audio on flip to back
+    if (isFlipped && currentCard) {
+        playAudioSilent();
+    }
 }
 
-// Navigate to previous card (go back in shown cards history)
 function previousCard() {
-    try {
-        if (shownCards.length > 1) {
-            // Put current card back to available
-            if (currentCard && !cardExistsInArray(currentCard, availableCards)) {
-                availableCards.push(currentCard);
-            }
-            
-            // Remove last shown card and make it current
+    if (shownCards.length > 1) {
+        animateCard('anim-r', () => {
+            if (currentCard && !cardExistsInArray(currentCard, availableCards)) availableCards.push(currentCard);
             shownCards.pop();
-            if (totalCardsShown > 0) {
-                totalCardsShown--; // Decrement when going back
-            }
+            if (totalCardsShown > 0) totalCardsShown--;
             currentCard = shownCards[shownCards.length - 1];
-            
-            // Remove from available if it's there (check by word)
-            const index = availableCards.findIndex(c => c.word === currentCard.word);
-            if (index > -1) {
-                availableCards.splice(index, 1);
-            }
-            
+            const idx = availableCards.findIndex(c => c.word === currentCard.word);
+            if (idx > -1) availableCards.splice(idx, 1);
             displayCard();
-        }
-    } catch (error) {
-        console.error('Error in previousCard:', error);
+        });
     }
 }
 
-// Navigate to next card (select random)
 function nextCard() {
-    try {
-        selectRandomCard();
-    } catch (error) {
-        console.error('Error in nextCard:', error);
-        alert('Error loading next card. Please try again.');
-    }
+    animateCard('anim-l', () => selectRandomCard());
 }
 
-// Mark card status
+function animateCard(animClass, callback) {
+    const flashcard = document.getElementById('flashcard');
+    flashcard.classList.add(animClass);
+    setTimeout(() => {
+        flashcard.classList.remove(animClass);
+        flashcard.style.opacity = '1';
+        flashcard.style.transform = '';
+        callback();
+    }, 350);
+}
+
 function markCard(status) {
     if (!currentCard) return;
-    
-    const cardKey = currentCard.word;
-    cardStatuses[cardKey] = status;
-    
+
+    cardStatuses[currentCard.word] = status;
+    sessionCardsStudied++;
+    updateSessionDisplay();
+
+    // Update badge and buttons immediately
+    updateStatusBadge();
+    updateMarkButtonHighlight();
+
+    // Track daily progress
+    const today = new Date().toISOString().split('T')[0];
+    if (!progressHistory[today]) progressHistory[today] = { studied: 0, known: 0, unknown: 0, review: 0 };
+    progressHistory[today].studied++;
+    progressHistory[today][status]++;
+
     saveProgress();
+    saveProgressHistory();
     updateStatistics();
-    
-    // Auto-advance to next card
-    setTimeout(() => {
-        nextCard();
-    }, 300);
-}
+    renderProgressHistory();
 
-// Play audio
-function playAudio(event) {
-    event.stopPropagation(); // Prevent card flip
-    
-    if (!currentCard) return;
-    
-    const wordForLink = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
-    const encodedWord = encodeURIComponent(wordForLink);
-    
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&client=tw-ob&q=${encodedWord}`;
-    
-    const audio = new Audio(audioUrl);
-    audio.play().catch(error => {
-        console.error('Error playing audio:', error);
-        alert('Could not play audio. Please check your internet connection.');
-    });
-}
-
-// Update progress display
-function updateProgress() {
-    const progressText = document.getElementById('progressText');
-    if (!progressText) return;
-    
-    const totalLoaded = cards.length;
-    const shownCount = totalCardsShown; // Use total shown counter instead of array length
-    const availableCount = availableCards.length;
-    
-    if (loadedPages.size >= totalPages) {
-        progressText.textContent = `Card ${shownCount} of ${totalLoaded} (All pages loaded, ${availableCount} remaining)`;
-    } else {
-        progressText.textContent = `Card ${shownCount} | Loaded: ${totalLoaded} cards (${loadedPages.size}/${totalPages} pages, ${availableCount} available)`;
+    if (currentQuizMode !== 'quiz') {
+        setTimeout(() => nextCard(), 300);
     }
 }
 
-// Update statistics
+// --- Audio ---
+
+function playAudio(event) {
+    if (event) event.stopPropagation();
+    if (!currentCard) return;
+    const wordForLink = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&client=tw-ob&q=${encodeURIComponent(wordForLink)}`;
+    new Audio(url).play().catch(() => {});
+}
+
+function playAudioSilent() {
+    if (!currentCard) return;
+    const wordForLink = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&client=tw-ob&q=${encodeURIComponent(wordForLink)}`;
+    new Audio(url).play().catch(() => {});
+}
+
+// --- Progress ---
+
+function updateProgress() {
+    const el = document.getElementById('progressText');
+    const elFs = document.getElementById('progressTextFs');
+    const bar = document.getElementById('progressBar');
+    if (!el) return;
+
+    const total = cards.length;
+    const avail = availableCards.length;
+    let text;
+
+    if (loadedPages.size >= totalPages) {
+        text = `Card ${totalCardsShown} of ${total} (${avail} remaining)`;
+    } else {
+        text = `Card ${totalCardsShown} | ${total} loaded (${loadedPages.size}/${totalPages} pages)`;
+    }
+
+    el.textContent = text;
+    if (elFs) elFs.textContent = text;
+
+    // Progress bar: percentage of cards that have been marked
+    if (bar && total > 0) {
+        const marked = cards.filter(c => cardStatuses[c.word]).length;
+        bar.value = Math.round((marked / total) * 100);
+    }
+}
+
 function updateStatistics() {
     const total = cards.length;
-    let known = 0;
-    let unknown = 0;
-    let review = 0;
-    
+    let known = 0, unknown = 0, review = 0;
     cards.forEach(card => {
-        const status = cardStatuses[card.word];
-        if (status === 'known') known++;
-        else if (status === 'unknown') unknown++;
-        else if (status === 'review') review++;
+        const s = cardStatuses[card.word];
+        if (s === 'known') known++;
+        else if (s === 'unknown') unknown++;
+        else if (s === 'review') review++;
     });
-    
+
     const progress = total > 0 ? Math.round(((known + review) / total) * 100) : 0;
-    
     document.getElementById('statTotal').textContent = total;
     document.getElementById('statKnown').textContent = known;
     document.getElementById('statUnknown').textContent = unknown;
@@ -626,117 +630,90 @@ function updateStatistics() {
     document.getElementById('statProgress').textContent = progress + '%';
 }
 
-// Save progress to localStorage
-function saveProgress() {
-    const progressData = {
-        cardStatuses: cardStatuses,
-        timestamp: new Date().toISOString()
-    };
-    localStorage.setItem('flashcardProgress', JSON.stringify(progressData));
+function renderProgressHistory() {
+    const chart = document.getElementById('historyChart');
+    const startLabel = document.getElementById('historyStart');
+    if (!chart) return;
+
+    const days = 30;
+    const today = new Date();
+    const bars = [];
+    let max = 0;
+
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        const entry = progressHistory[key] || { studied: 0 };
+        if (entry.studied > max) max = entry.studied;
+        bars.push({ date: key, ...entry });
+    }
+
+    if (max === 0) {
+        chart.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px;text-align:center;width:100%">No activity yet</div>';
+        startLabel.textContent = '';
+        return;
+    }
+
+    chart.innerHTML = bars.map(b => {
+        const h = Math.max(2, (b.studied / max) * 45);
+        return `<div class="history-bar" style="height:${h}px" data-tip="${b.date}: ${b.studied||0} cards"></div>`;
+    }).join('');
+    startLabel.textContent = bars[0].date;
 }
 
-// Load progress from localStorage
+// --- UI Toggles ---
+
+function toggleStats() {
+    const body = document.getElementById('statsBody');
+    const chevron = document.getElementById('statsChevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+}
+
+function toggleShortcuts() {
+    document.getElementById('shortcutList').classList.toggle('open');
+}
+
+// --- Persistence ---
+
+function saveProgress() {
+    localStorage.setItem('flashcardProgress', JSON.stringify({
+        cardStatuses, timestamp: new Date().toISOString()
+    }));
+}
+
 function loadProgress() {
     const saved = localStorage.getItem('flashcardProgress');
     if (saved) {
-        try {
-            const progressData = JSON.parse(saved);
-            cardStatuses = progressData.cardStatuses || {};
-        } catch (error) {
-            console.error('Error loading progress:', error);
-        }
+        try { cardStatuses = JSON.parse(saved).cardStatuses || {}; }
+        catch (e) {}
     }
 }
 
-// Setup keyboard shortcuts
-function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', function(event) {
-        // Don't trigger shortcuts when typing in input fields
-        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-            return;
-        }
-        
-        // Previous card: Left Arrow or 'p'
-        if (event.code === 'ArrowLeft' || event.key === 'p' || event.key === 'P') {
-            event.preventDefault();
-            previousCard();
-        } 
-        // Next card: Right Arrow or 'n'
-        else if (event.code === 'ArrowRight' || event.key === 'n' || event.key === 'N') {
-            event.preventDefault();
-            nextCard();
-        } 
-        // Flip card: Space
-        else if (event.code === 'Space') {
-            event.preventDefault();
-            flipCard();
-        }
-    });
+function saveProgressHistory() {
+    localStorage.setItem('flashcardHistory', JSON.stringify(progressHistory));
 }
 
-// Setup swipe gestures for mobile
-let swipeGesturesSetup = false;
-function setupSwipeGestures() {
-    if (swipeGesturesSetup) return; // Already set up
-    
-    // Use event delegation on the card wrapper since flashcard might not exist yet
-    const cardWrapper = document.querySelector('.card-wrapper');
-    if (!cardWrapper) {
-        // Retry after a short delay if element doesn't exist yet
-        setTimeout(setupSwipeGestures, 100);
-        return;
+function loadProgressHistory() {
+    const saved = localStorage.getItem('flashcardHistory');
+    if (saved) {
+        try { progressHistory = JSON.parse(saved); } catch (e) {}
     }
-    
-    swipeGesturesSetup = true;
-    
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
-    const minSwipeDistance = 50; // Minimum distance for a swipe
-    
-    cardWrapper.addEventListener('touchstart', function(event) {
-        touchStartX = event.changedTouches[0].screenX;
-        touchStartY = event.changedTouches[0].screenY;
-    }, { passive: true });
-    
-    cardWrapper.addEventListener('touchend', function(event) {
-        touchEndX = event.changedTouches[0].screenX;
-        touchEndY = event.changedTouches[0].screenY;
-        
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-        
-        // Check if it's a horizontal swipe (not vertical scroll)
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-            if (deltaX > 0) {
-                // Swipe right - previous card
-                previousCard();
-            } else {
-                // Swipe left - next card
-                nextCard();
-            }
-        }
-    }, { passive: true });
 }
 
-// Export progress as JSON
 function exportProgress() {
-    const progressData = {
-        cardStatuses: cardStatuses,
+    const data = {
+        cardStatuses, progressHistory,
         timestamp: new Date().toISOString(),
-        totalCards: cards.length,
         statistics: {
             known: Object.values(cardStatuses).filter(s => s === 'known').length,
             unknown: Object.values(cardStatuses).filter(s => s === 'unknown').length,
             review: Object.values(cardStatuses).filter(s => s === 'review').length
         }
     };
-    
-    const jsonString = JSON.stringify(progressData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
     a.download = `flashcard-progress-${new Date().toISOString().split('T')[0]}.json`;
@@ -744,16 +721,111 @@ function exportProgress() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    alert('Progress exported successfully!');
 }
 
-// Clear progress
 function clearProgress() {
-    if (confirm('Are you sure you want to clear all progress? This cannot be undone.')) {
+    if (confirm('Clear all progress? This cannot be undone.')) {
         cardStatuses = {};
+        progressHistory = {};
         localStorage.removeItem('flashcardProgress');
+        localStorage.removeItem('flashcardHistory');
         updateStatistics();
-        alert('Progress cleared successfully!');
+        renderProgressHistory();
+        if (currentCard) { updateStatusBadge(); updateMarkButtonHighlight(); }
     }
+}
+
+// --- Keyboard Shortcuts ---
+
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.code === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+            e.preventDefault(); previousCard();
+        } else if (e.code === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
+            e.preventDefault(); nextCard();
+        } else if (e.code === 'Space') {
+            e.preventDefault(); flipCard();
+        } else if (e.key === '1') {
+            markCard('known');
+        } else if (e.key === '2') {
+            markCard('unknown');
+        } else if (e.key === '3') {
+            markCard('review');
+        } else if (e.key === 'a' || e.key === 'A') {
+            playAudio(null);
+        } else if (e.key === 'Escape') {
+            exitFullscreen();
+        }
+    });
+}
+
+// --- Swipe Gestures (mobile) ---
+
+let swipeGesturesSetup = false;
+function setupSwipeGestures() {
+    if (swipeGesturesSetup) return;
+    const cardWrapper = document.getElementById('cardWrapper');
+    if (!cardWrapper) { setTimeout(setupSwipeGestures, 100); return; }
+
+    swipeGesturesSetup = true;
+    let startX = 0, startY = 0, isDragging = false;
+    const threshold = 60;
+
+    const swipeLeftIndicator = document.getElementById('swipeLeft');
+    const swipeRightIndicator = document.getElementById('swipeRight');
+
+    cardWrapper.addEventListener('touchstart', function(e) {
+        startX = e.changedTouches[0].screenX;
+        startY = e.changedTouches[0].screenY;
+        isDragging = true;
+    }, { passive: true });
+
+    cardWrapper.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        const dx = e.changedTouches[0].screenX - startX;
+        const dy = e.changedTouches[0].screenY - startY;
+
+        // Show swipe-to-mark indicators for horizontal swipes
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+            if (dx > 0) {
+                swipeRightIndicator.classList.add('visible');
+                swipeLeftIndicator.classList.remove('visible');
+            } else {
+                swipeLeftIndicator.classList.add('visible');
+                swipeRightIndicator.classList.remove('visible');
+            }
+        } else {
+            swipeLeftIndicator.classList.remove('visible');
+            swipeRightIndicator.classList.remove('visible');
+        }
+    }, { passive: true });
+
+    cardWrapper.addEventListener('touchend', function(e) {
+        isDragging = false;
+        swipeLeftIndicator.classList.remove('visible');
+        swipeRightIndicator.classList.remove('visible');
+
+        const dx = e.changedTouches[0].screenX - startX;
+        const dy = e.changedTouches[0].screenY - startY;
+
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+            if (dx > 0) {
+                // Swipe right = mark known + next
+                markCard('known');
+            } else {
+                // Swipe left = mark unknown + next
+                markCard('unknown');
+            }
+        } else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
+            if (dy > 0) {
+                // Swipe down = next card (skip)
+                nextCard();
+            } else {
+                // Swipe up = mark review + next
+                markCard('review');
+            }
+        }
+    }, { passive: true });
 }

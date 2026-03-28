@@ -4,125 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>German Course - Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="config.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
     <style>
         .home-container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
             text-align: center;
-        }
-
-        .home-title {
-            font-size: 48px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .home-subtitle {
-            font-size: 20px;
-            color: #666;
-            margin-bottom: 50px;
+            padding: 2rem 1rem;
         }
 
         .nav-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
 
-        .nav-card {
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+        .nav-cards article {
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
             text-decoration: none;
             color: inherit;
             display: block;
+            padding: 1.5rem;
         }
 
-        .nav-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            border-color: #4CAF50;
+        .nav-cards article:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
-        .nav-card-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+        .nav-card-icon { font-size: 3rem; margin-bottom: 0.8rem; }
+
+        .nav-cards article h3 { margin-bottom: 0.5rem; }
+
+        .nav-cards article p {
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
+            margin-bottom: 0;
         }
 
-        .nav-card-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .nav-card-description {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .card-flashcards {
-            border-color: #9c27b0;
-        }
-
-        .card-flashcards:hover {
-            border-color: #7b1fa2;
-        }
-
-        .card-vocabulary {
-            border-color: #4285f4;
-        }
-
-        .card-vocabulary:hover {
-            border-color: #357ae8;
-        }
-
-        .card-grammar {
-            border-color: #ff9800;
-        }
-
-        .card-grammar:hover {
-            border-color: #f57c00;
+        @media (max-width: 576px) {
+            .nav-cards { grid-template-columns: 1fr; gap: 1rem; }
+            .nav-cards article { padding: 1rem; }
         }
     </style>
 </head>
 <body>
-    <div class="home-container">
-        <h1 class="home-title">German Course</h1>
-        <p class="home-subtitle">Learn German vocabulary, grammar, and practice with flashcards</p>
-        
+    <nav class="top-nav">
+        <ul>
+            <li><a href="index.html" class="brand">German Course</a></li>
+        </ul>
+        <ul>
+            <li><a href="flashcards.html">Flashcards</a></li>
+            <li><a href="vocabulary.html">Vocabulary</a></li>
+            <li><a href="markdown-viewer.html?file=grammar/1.md">Grammar</a></li>
+            <li><button class="dark-toggle" onclick="toggleDarkMode()">🌙</button></li>
+        </ul>
+    </nav>
+
+    <main class="home-container">
+        <hgroup>
+            <h1>German Course</h1>
+            <p>Learn German vocabulary, grammar, and practice with flashcards</p>
+        </hgroup>
+
         <div class="nav-cards">
-            <a href="flashcards.html" class="nav-card card-flashcards">
+            <a href="flashcards.html"><article>
                 <div class="nav-card-icon">📚</div>
-                <div class="nav-card-title">Flashcards</div>
-                <div class="nav-card-description">
-                    Study German words with interactive flashcards. Practice vocabulary from all pages or customize your study set.
-                </div>
-            </a>
-            
-            <a href="vocabulary.html" class="nav-card card-vocabulary">
+                <h3>Flashcards</h3>
+                <p>Study German words with interactive flashcards. Practice vocabulary from all pages or customize your study set.</p>
+            </article></a>
+
+            <a href="vocabulary.html"><article>
                 <div class="nav-card-icon">📖</div>
-                <div class="nav-card-title">Vocabulary</div>
-                <div class="nav-card-description">
-                    Browse German vocabulary in table format. View words with translations, pronunciations, and example sentences.
-                </div>
-            </a>
-            
-            <a href="markdown-viewer.html?file=grammar/1.md" class="nav-card card-grammar">
+                <h3>Vocabulary</h3>
+                <p>Browse German vocabulary in table format. View words with translations, pronunciations, and example sentences.</p>
+            </article></a>
+
+            <a href="markdown-viewer.html?file=grammar/1.md"><article>
                 <div class="nav-card-icon">📝</div>
-                <div class="nav-card-title">Grammar</div>
-                <div class="nav-card-description">
-                    Learn German pronunciation rules and grammar. Study pronunciation patterns and language rules.
-                </div>
-            </a>
+                <h3>Grammar</h3>
+                <p>Learn German pronunciation rules and grammar. Study pronunciation patterns and language rules.</p>
+            </article></a>
         </div>
-    </div>
+    </main>
 </body>
 </html>

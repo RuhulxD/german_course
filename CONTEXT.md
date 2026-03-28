@@ -14,40 +14,38 @@ Static German learning site: flashcards and vocabulary tables driven by CSV file
 
 ## Data Flow
 
-- **Flashcards**: `flashcards.js` → `fetch('lws/csv/${pageNum}.csv')` → parse CSV → build cards (word, pronunciation, banglaMeaning, englishMeaning, sentence).
-- **Vocabulary**: Inline script in `vocabulary.html` → `fetch('lws/csv/${pageNumber}.csv')` → parse CSV → render table with optional links (Google Translate, dict.cc, Wiktionary).
-- **Page range**: 1–38. Set in:
-  - `flashcards.js`: `totalPages = 38` and `generatePageOptions()` loop (`1..totalPages`).
-  - `vocabulary.html`: `generatePageOptions()` loop (`1..38`).
+- **Flashcards**: `flashcards.js` → `fetch('lws/csv/${bookFolder}/${page}.csv')` → parse CSV → build cards (word, pronunciation, banglaMeaning, englishMeaning, sentence).
+- **Vocabulary**: Inline script in `vocabulary.html` → `fetch('lws/csv/${bookFolder}/${page}.csv')` → parse CSV → render table with optional links (Google Translate, dict.cc, Wiktionary).
+- **Book/page config**: Defined as a `books` array in both `flashcards.js` and `vocabulary.html`. Each book has a `folder` name and `pages` array. Adding a new book or pages requires updating this config in both files.
 
-## CSV Format (`lws/csv/*.csv`)
+## CSV Format (`lws/csv/{book}/*.csv`)
 
 - Header: `German Word,Bangla Pronunciation,Bangla Meaning,English Meaning,German sentence`
 - UTF-8; one row per vocabulary item.
-- Used by both Flashcards and Vocabulary. Adding a new page (e.g. 39) requires new CSV and bumping the page range in both places.
+- Used by both Flashcards and Vocabulary. Adding a new page requires a new CSV in the appropriate book folder and updating the `books` config in both `flashcards.js` and `vocabulary.html`.
 
 ## Source of Truth for Words
 
-- **Raw lists**: `lws/pages/` – numbered files (1, 2, … 40), one word/phrase per line (sometimes multi-line, e.g. verb + conjugation).
-- **App data**: `lws/csv/` – only CSVs are read by the app. To “add new files” or new pages, add/update CSVs and then update `totalPages` / vocabulary dropdown max (e.g. 38 → 39).
+- **Raw lists**: `lws/pages/{book}/` – numbered files (e.g. `book-1/1`, `book-3/5`), one word/phrase per line (sometimes multi-line, e.g. verb + conjugation).
+- **App data**: `lws/csv/{book}/` – only CSVs are read by the app. To add new pages, add CSVs in the book folder and update the `books` config in both `flashcards.js` and `vocabulary.html`.
 
 ## Key Conventions
 
 - **Bangla Pronunciation**: Phonetic Bengali script for the German word.
 - **Bangla Meaning**: Bengali translation.
 - **German sentence**: Short example sentence using the word.
-- CSV filenames: `{page}.csv`; not every page number in `lws/pages/` has a CSV (e.g. no `26.csv` in typical setup). App supports 1–38.
+- CSV filenames: `{page}.csv` inside book folders; not every page number may have a CSV (e.g. no `26.csv` in book-1).
 
 ## When Adding or Editing Content
 
-1. New vocabulary page: add `lws/pages/N` (raw list) and `lws/csv/N.csv` (five columns). Then set `totalPages` and vocabulary loop to include N (e.g. 39).
-2. Regenerating CSVs from pages: parse `lws/pages/N`, merge continuation lines, normalize “German Word”, then fill Bangla Pronunciation, Bangla Meaning, English Meaning, German sentence (e.g. from prior session’s “generate all fields” flow).
-3. Flashcards vs Vocabulary: both read the same CSVs; no separate config.
+1. New vocabulary page: add `lws/pages/{book}/N` (raw list) and `lws/csv/{book}/N.csv` (five columns). Then update the `books` array in both `flashcards.js` and `vocabulary.html`.
+2. Regenerating CSVs from pages: parse `lws/pages/{book}/N`, merge continuation lines, normalize “German Word”, then fill Bangla Pronunciation, Bangla Meaning, English Meaning, German sentence.
+3. Flashcards vs Vocabulary: both read the same CSVs and share the same `books` config structure.
 
 ## Files to Touch for “new pages” / “include new files”
 
-- **flashcards.js**: `totalPages = 38` → new max; `for (let i = 1; i <= totalPages; i++)` in `generatePageOptions()`.
-- **vocabulary.html**: `for (let i = 1; i <= 38; i++)` (and comment “1–38”) → new max.
+- **flashcards.js**: Update the `books` array at the top of the file (add new book or extend pages array).
+- **vocabulary.html**: Update the `books` array in the inline script (must match `flashcards.js`).
 
 ## Other Paths
 
