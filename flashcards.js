@@ -569,19 +569,25 @@ function markCard(status) {
 
 // --- Audio ---
 
+function speakGerman(text) {
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'de-DE';
+    utterance.rate = 0.9;
+    speechSynthesis.speak(utterance);
+}
+
 function playAudio(event) {
     if (event) event.stopPropagation();
     if (!currentCard) return;
     const wordForLink = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&client=tw-ob&q=${encodeURIComponent(wordForLink)}`;
-    new Audio(url).play().catch(() => {});
+    speakGerman(wordForLink);
 }
 
 function playAudioSilent() {
     if (!currentCard) return;
     const wordForLink = currentCard.word.replace(/^(der|die|das)\s+/i, '').trim();
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&client=tw-ob&q=${encodeURIComponent(wordForLink)}`;
-    new Audio(url).play().catch(() => {});
+    speakGerman(wordForLink);
 }
 
 // --- Progress ---
