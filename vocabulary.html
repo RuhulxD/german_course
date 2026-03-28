@@ -185,7 +185,8 @@
                     if (i === 0) cls = 'word-cell';
                     else if (i === 1) cls = 'pronunciation-cell';
                     else if (i === 2 || i === 3) cls = 'meaning-cell';
-                    else if (i === 4) cls = 'sentence-cell';
+                    else if (h === 'Partizip II') cls = 'partizip-cell';
+                    else if (h === 'German sentence') cls = 'sentence-cell';
                     html += `<td class="${cls}">${query ? highlight(val, query) : escapeHtml(val)}</td>`;
                 });
 

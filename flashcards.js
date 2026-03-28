@@ -99,6 +99,7 @@ function mapRowToCard(row) {
         pronunciation: row['Bangla Pronunciation'] || '',
         banglaMeaning: row['Bangla Meaning'] || '',
         englishMeaning: row['English Meaning'] || '',
+        partizipII: row['Partizip II'] || '',
         sentence: row['German sentence'] || ''
     };
 }
@@ -446,6 +447,11 @@ function updateBackSide() {
     document.getElementById('cardPronunciation').textContent = currentCard.pronunciation || '-';
     document.getElementById('cardBanglaMeaning').textContent = currentCard.banglaMeaning || '-';
     document.getElementById('cardEnglishMeaning').textContent = currentCard.englishMeaning || '-';
+    const partizipEl = document.getElementById('cardPartizipII');
+    if (partizipEl) {
+        partizipEl.textContent = currentCard.partizipII || '';
+        partizipEl.style.display = currentCard.partizipII ? '' : 'none';
+    }
     document.getElementById('cardSentence').textContent = currentCard.sentence || '-';
 }
 

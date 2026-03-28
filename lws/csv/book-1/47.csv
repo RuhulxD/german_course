@@ -1,24 +1,24 @@
-German Word,Bangla Pronunciation,Bangla Meaning,English Meaning,German sentence
-trainieren (hat trainiert),ট্রেইনিয়ারেন,প্রশিক্ষণ করা,to train,Er trainiert jeden Tag.
-Rad fahren,রাট ফাহরেন,সাইকেল চালানো,to cycle,Sie fährt gern Rad.
-der Rekord -e,ডার রেকর্ড,রেকর্ড,record,Er hat einen neuen Rekord.
-am liebsten,আম লিবস্টেন,সবচেয়ে পছন্দে,most of all,Am liebsten esse ich Pizza.
-am meisten,আম মাইস্টেন,সবচেয়ে বেশি,most,Das gefällt mir am meisten.
-zufrieden,ৎসুফ্রিডেন,সন্তুষ্ট,satisfied,Er ist mit dem Ergebnis zufrieden.
-der Witz -e,ডার ভিৎস,রসিকতা,joke,Das war ein guter Witz.
-dies-,ডিস-,এ,this (prefix),Dieses Buch ist interessant.
-welch-,ভেল্খ-,কোন,which (prefix),Welcher Tag ist heute?
-der Koffer -,ডার কফার,সুটকেস,suitcase,Mein Koffer ist zu schwer.
-gehören (hat gehört),গেহ্যোরেন,অন্তর্ভুক্ত হওয়া,to belong,Das gehört mir.
-mögen (ich mag, du magst, er mag) (hat gemocht),ম্যোগেন,পছন্দ করা,to like,Ich mag Schokolade.
-der Wochentag -e,ডার ভোখেনটাগ,সপ্তাহের দিন,weekday,Welcher Wochentag ist heute?
-das Erdgeschoss -e,ডাস এর্টগেশোস,ভূমি তলা,ground floor,Die Toilette ist im Erdgeschoss.
-das Obergeschoss -e,ডাস ওবারগেশোস,উপর তলা,upper floor,Die Wohnung ist im Obergeschoss.
-das Untergeschoss -e,ডাস উন্টারগেশোস,ভূগর্ভস্থ তলা,basement,Der Keller ist im Untergeschoss.
-der Ausgang -e,ডার আউসগাং,প্রবেশদ্বার/বেরোনোর পথ,exit,Wo ist der Ausgang?
-die Drogerie -n,ডি ড্রোগারি,ড্রাগস্টোর,drugstore,In der Drogerie gibt es Kosmetik.
-die Kosmetik (Sg.),ডি কসমেটিক,প্রসাধনী,cosmetics,Sie kauft Kosmetik.
-der Schmuck (Sg.),ডার শ্মুক,অলংকার,jewelry,Sie trägt keinen Schmuck.
-das Geschirr (Sg.),ডাস গেশির,বাসনকোসন,dishes/crockery,Das Geschirr ist sauber.
-das Glas -er,ডাস গ্লাস,গ্লাস,glass/tumbler,Ein Glas Wasser bitte!
-die Mode -n,ডি মোডে,ফ্যাশন,fashion,Das ist in Mode.
+German Word,Bangla Pronunciation,Bangla Meaning,English Meaning,Partizip II,German sentence
+trainieren (hat trainiert),ট্রেইনিয়ারেন,প্রশিক্ষণ করা,to train,trainiert,Er trainiert jeden Tag.
+Rad fahren,রাট ফাহরেন,সাইকেল চালানো,to cycle,Rad gefahren,Sie fährt gern Rad.
+der Rekord -e,ডার রেকর্ড,রেকর্ড,record,,Er hat einen neuen Rekord.
+am liebsten,আম লিবস্টেন,সবচেয়ে পছন্দে,most of all,,Am liebsten esse ich Pizza.
+am meisten,আম মাইস্টেন,সবচেয়ে বেশি,most,,Das gefällt mir am meisten.
+zufrieden,ৎসুফ্রিডেন,সন্তুষ্ট,satisfied,,Er ist mit dem Ergebnis zufrieden.
+der Witz -e,ডার ভিৎস,রসিকতা,joke,,Das war ein guter Witz.
+dies-,ডিস-,এ,this (prefix),,Dieses Buch ist interessant.
+welch-,ভেল্খ-,কোন,which (prefix),,Welcher Tag ist heute?
+der Koffer -,ডার কফার,সুটকেস,suitcase,,Mein Koffer ist zu schwer.
+gehören (hat gehört),গেহ্যোরেন,অন্তর্ভুক্ত হওয়া,to belong,gehört,Das gehört mir.
+mögen (ich mag, du magst, er mag) (hat gemocht),ম্যোগেন,পছন্দ করা,to like,gemocht,Ich mag Schokolade.
+der Wochentag -e,ডার ভোখেনটাগ,সপ্তাহের দিন,weekday,,Welcher Wochentag ist heute?
+das Erdgeschoss -e,ডাস এর্টগেশোস,ভূমি তলা,ground floor,,Die Toilette ist im Erdgeschoss.
+das Obergeschoss -e,ডাস ওবারগেশোস,উপর তলা,upper floor,,Die Wohnung ist im Obergeschoss.
+das Untergeschoss -e,ডাস উন্টারগেশোস,ভূগর্ভস্থ তলা,basement,,Der Keller ist im Untergeschoss.
+der Ausgang -e,ডার আউসগাং,প্রবেশদ্বার/বেরোনোর পথ,exit,,Wo ist der Ausgang?
+die Drogerie -n,ডি ড্রোগারি,ড্রাগস্টোর,drugstore,,In der Drogerie gibt es Kosmetik.
+die Kosmetik (Sg.),ডি কসমেটিক,প্রসাধনী,cosmetics,,Sie kauft Kosmetik.
+der Schmuck (Sg.),ডার শ্মুক,অলংকার,jewelry,,Sie trägt keinen Schmuck.
+das Geschirr (Sg.),ডাস গেশির,বাসনকোসন,dishes/crockery,,Das Geschirr ist sauber.
+das Glas -er,ডাস গ্লাস,গ্লাস,glass/tumbler,,Ein Glas Wasser bitte!
+die Mode -n,ডি মোডে,ফ্যাশন,fashion,,Das ist in Mode.

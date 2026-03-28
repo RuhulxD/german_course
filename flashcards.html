@@ -191,6 +191,8 @@
         .back-pron { font-size: 0.95rem; opacity: 0.85; font-style: italic; margin-bottom: 0.8rem; }
         .back-meanings { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 0.8rem; }
         .back-pill { padding: 0.3rem 0.8rem; background: rgba(255,255,255,0.18); border-radius: 20px; font-size: 0.95rem; }
+        .back-partizip { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.4rem; padding: 0.2rem 0.6rem; background: rgba(255,200,50,0.2); border-radius: 12px; display: inline-block; }
+        .back-partizip::before { content: "Partizip II: "; font-weight: bold; }
         .back-div { width: 50px; height: 1px; background: rgba(255,255,255,0.25); margin: 0.5rem auto; }
         .back-sentence { font-size: 0.85rem; font-style: italic; opacity: 0.85; line-height: 1.5; margin-bottom: 0.6rem; }
 
@@ -378,6 +380,7 @@
                                     <span class="back-pill" id="cardBanglaMeaning">-</span>
                                     <span class="back-pill" id="cardEnglishMeaning">-</span>
                                 </div>
+                                <div class="back-partizip" id="cardPartizipII" style="display:none"></div>
                                 <div class="back-div"></div>
                                 <div class="back-label">EXAMPLE</div>
                                 <div class="back-sentence" id="cardSentence">-</div>
