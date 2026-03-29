@@ -9,10 +9,10 @@ die Garage -n,ডি গারাজে,গ্যারেজ,garage,,Sie möcht
 der Quadratmeter (m²/qm) -,ডার কভাড্রাটমিটার,বর্গমিটার,square meter,,Das Zimmer ist 21 m² groß.
 nur,নুর,শুধু,only,,Sie möchten nur 400 bis 500 Euro Miete bezahlen.
 die Miete -n,ডি মিয়েতে,ভাড়া,rent,,Sie möchten nur 400 bis 500 Euro Miete bezahlen.
-bezahlen,বেট্সালেন,পেমেন্ট করা,to pay,bezahlt,Sie möchten nur 400 bis 500 Euro Miete bezahlen.
+bezahlen,বেট্সালেন,পেমেন্ট করা,to pay,hat bezahlt,Sie möchten nur 400 bis 500 Euro Miete bezahlen.
 E,এ,ই,E,,E
 E1,এ-এক,ই-ওয়ান,E1,,E1
-verkaufen,ফেরকাউফেন,বিক্রি করা,to sell,verkauft,Was verkauft er?
+verkaufen,ফেরকাউফেন,বিক্রি করা,to sell,hat verkauft,Was verkauft er?
 etwas,এটভাস,কিছু,something,,Wer verkauft etwas?
 der Computer -,ডার কম্পিউটার,কম্পিউটার,computer,,Sie verkauft einen Computertisch.
 der Schreibtisch -e,ডার শ্রাইবটিশ,লেখার টেবিল,desk,,Er verkauft einen Schreibtisch.
@@ -24,7 +24,7 @@ ungefähr,উঙ্গেফার,প্রায়,approximately,,Der Tisch i
 der Meter (m) -,ডার মিটার,মিটার,meter,,Ungefähr zwei Meter lang.
 lang,লাং,দীর্ঘ,long,,Ungefähr zwei Meter lang.
 genau,গেনাউ,ঠিক,exact,,Hm... Wie lang ist er denn genau?
-sehen,জেহেন,দেখা,to see,gesehen,Ich möchte den Tisch gern sehen.
+sehen,জেহেন,দেখা,to see,hat gesehen,Ich möchte den Tisch gern sehen.
 E3,এ-ড্রাই,ই-থ্রি,E3,,E3
 hoch,হখ,উচ্চ,tall,,Der Kühlschrank ist 85 Zentimeter hoch.
 morgen,মর্গেন,আগামীকাল,tomorrow,,Sind Sie morgen zu Hause?

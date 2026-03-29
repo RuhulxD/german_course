@@ -4,7 +4,7 @@ die Ampel -n,ডি আম্পেল,ট্রাফিক লাইট,traffi
 die Tankstelle -n,ডি টাংকশ্টেলে,পেট্রল পাম্প,gas station,,Wo ist die nächste Tankstelle?
 der Stadtplan -e,ডার শ্টাটপ্লান,শহরের মানচিত্র,city map,,Haben Sie einen Stadtplan?
 fremd,ফ্রেম্ট,অপরিচিত,foreign/strange,,Die Stadt ist mir fremd.
-fliegen (ist geflogen),ফ্লিগেন,উড়ে যাওয়া,to fly,geflogen,Er ist nach Berlin geflogen.
+fliegen (ist geflogen),ফ্লিগেন,উড়ে যাওয়া,to fly,ist geflogen,Er ist nach Berlin geflogen.
 das Flugzeug -e,ডাস ফ্লুগৎসয়েগ,বিমান,airplane,,Das Flugzeug startet um 8 Uhr.
 die Straßenbahn -en,ডি শ্ট্রাসেনবান,ট্রাম,tram,,Die Straßenbahn fährt alle zehn Minuten.
 der Zug -e,ডার ৎসুগ,ট্রেন,train,,Der Zug fährt in fünf Minuten.
@@ -17,7 +17,7 @@ der Lkw -s,ডার এলকাভে,লরি,truck/lorry,,Der Lkw blockiert
 der Kiosk -e,ডার কিয়স্ক,কিয়স্ক,kiosk,,Am Kiosk kann man Zeitungen kaufen.
 die Haltestelle -n,ডি হাল্টেশ্টেলে,বাস স্টপ,bus stop,,An der nächsten Haltestelle steige ich aus.
 die Buchhandlung -en,ডি বুখহান্ডলুং,বইয়ের দোকান,bookshop,,Die Buchhandlung ist geschlossen.
-sitzen (hat gesessen),জিৎসেন,বসা,to sit,gesessen,Er sitzt im Zug.
+sitzen (hat gesessen),জিৎসেন,বসা,to sit,hat gesessen,Er sitzt im Zug.
 die Bücherei -en,ডি ব্যুখারাই,লাইব্রেরি,library,,Die Bücherei hat am Sonntag geschlossen.
 der Baum -e,ডার বাউম,গাছ,tree,,Der Baum ist sehr alt.
 die Bank -en,ডি বাংক,বেঞ্চ/ব্যাংক,bench/bank,,Setzen Sie sich auf die Bank.
