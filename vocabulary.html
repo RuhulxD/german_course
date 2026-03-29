@@ -56,6 +56,20 @@
         }
 
         .action-links a:hover { opacity: 0.85; }
+
+        .audio-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 50%;
+            line-height: 1;
+            color: inherit;
+        }
+        .audio-btn:hover { background: rgba(0,0,0,0.1); }
+        .audio-btn.playing { animation: pulse 0.6s ease-in-out infinite alternate; }
+        @keyframes pulse { to { opacity: 0.4; } }
         .action-links a.secondary { background: var(--pico-secondary); color: var(--pico-secondary-inverse); }
         .action-links a.contrast { background: var(--pico-contrast); color: var(--pico-contrast-inverse); }
 
@@ -133,6 +147,19 @@
     </main>
 
     <script>
+        function speakGerman(text, btn) {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'de-DE';
+            utterance.rate = 0.9;
+            if (btn) {
+                btn.classList.add('playing');
+                utterance.onend = () => btn.classList.remove('playing');
+                utterance.onerror = () => btn.classList.remove('playing');
+            }
+            speechSynthesis.speak(utterance);
+        }
+
         const pageSelect = document.getElementById('pageSelect');
         const tableWrapper = document.getElementById('tableWrapper');
         const pageNav = document.getElementById('pageNav');
@@ -177,7 +204,7 @@
             data.forEach(row => {
                 html += '<tr>';
                 const word = row[headers[0]] || '';
-                const clean = word.replace(/^(der|die|das)\s+/i, '').trim();
+                const clean = word.replace(/^(der|die|das)\s+/i, '').replace(/\s+\(.*?\)/g, '').replace(/\s+-\w*$/g, '').trim();
 
                 headers.forEach((h, i) => {
                     const val = row[h] || '';
@@ -187,7 +214,12 @@
                     else if (i === 2 || i === 3) cls = 'meaning-cell';
                     else if (h === 'Partizip II') cls = 'partizip-cell';
                     else if (h === 'German sentence') cls = 'sentence-cell';
-                    html += `<td class="${cls}">${query ? highlight(val, query) : escapeHtml(val)}</td>`;
+                    const content = query ? highlight(val, query) : escapeHtml(val);
+                    if (i === 0 && clean) {
+                        html += `<td class="${cls}"><button class="audio-btn" onclick="speakGerman('${clean.replace(/'/g,"\\'")}', this)" title="Play pronunciation">&#x1F50A;</button> ${content}</td>`;
+                    } else {
+                        html += `<td class="${cls}">${content}</td>`;
+                    }
                 });
 
                 if (clean) {
