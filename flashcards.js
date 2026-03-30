@@ -549,9 +549,14 @@ function animateCard(animClass, callback) {
 function markCard(status) {
     if (!currentCard) return;
 
+    const previousStatus = cardStatuses[currentCard.word];
     cardStatuses[currentCard.word] = status;
-    sessionCardsStudied++;
-    updateSessionDisplay();
+
+    // Only count as a new study action if the card was previously unrated
+    if (!previousStatus) {
+        sessionCardsStudied++;
+        updateSessionDisplay();
+    }
 
     // Update badge and buttons immediately
     updateStatusBadge();
@@ -560,8 +565,19 @@ function markCard(status) {
     // Track daily progress
     const today = new Date().toISOString().split('T')[0];
     if (!progressHistory[today]) progressHistory[today] = { studied: 0, known: 0, unknown: 0, review: 0 };
-    progressHistory[today].studied++;
-    progressHistory[today][status]++;
+
+    if (!previousStatus) {
+        // First time marking this card today (or ever)
+        progressHistory[today].studied++;
+        progressHistory[today][status]++;
+    } else if (previousStatus !== status) {
+        // Re-marking with a different status: swap the count
+        if (progressHistory[today][previousStatus] > 0) {
+            progressHistory[today][previousStatus]--;
+        }
+        progressHistory[today][status]++;
+    }
+    // If same status as before, no change needed
 
     saveProgress();
     saveProgressHistory();
@@ -640,6 +656,11 @@ function updateStatistics() {
     document.getElementById('statUnknown').textContent = unknown;
     document.getElementById('statReview').textContent = review;
     document.getElementById('statProgress').textContent = progress + '%';
+
+    // Update mark button counts
+    document.getElementById('btnKnownCount').textContent = known;
+    document.getElementById('btnUnknownCount').textContent = unknown;
+    document.getElementById('btnReviewCount').textContent = review;
 }
 
 function renderProgressHistory() {
