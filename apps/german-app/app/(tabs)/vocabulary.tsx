@@ -1,6 +1,6 @@
 import * as Speech from 'expo-speech';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { allPages, books, parseCSV } from '@/lib/config';
 import { contentUrl } from '@/lib/contentBase';
@@ -32,10 +33,9 @@ function highlightParts(text: string, q: string): { text: string; match: boolean
 
 export default function VocabularyScreen() {
   const colorScheme = useColorScheme();
-  const border = colorScheme === 'dark' ? '#444' : '#ccc';
-  const inputBg = colorScheme === 'dark' ? '#1c1c1c' : '#fff';
+  const c = Colors[colorScheme];
 
-  const [pagePath, setPagePath] = useState('');
+  const [pagePath, setPagePath] = useState('book-1/1');
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,10 @@ export default function VocabularyScreen() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void loadCSV(pagePath);
   }, []);
 
   const searchVocabulary = useCallback(async () => {
@@ -167,26 +171,26 @@ export default function VocabularyScreen() {
 
     const baseStyle =
       headerIdx === 0
-        ? styles.wordCell
+        ? [styles.wordCell, { color: c.text }]
         : headerIdx === 1
-          ? styles.pronCell
+          ? [styles.pronCell, { color: c.textSecondary }]
           : headerIdx === 2 || headerIdx === 3
-            ? styles.meaningCell
+            ? [styles.meaningCell, { color: c.accent }]
             : headerName === 'German sentence'
-              ? styles.sentenceCell
-              : undefined;
+              ? [styles.sentenceCell, { color: c.textSecondary }]
+              : [{ color: c.text }];
 
     const parts = highlightParts(val, q);
 
     if (headerIdx === 0 && clean) {
       return (
-        <RNView style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <RNView style={styles.cellRow}>
           <Pressable onPress={() => speak(word)} accessibilityLabel="Play pronunciation">
             <Text style={styles.audioBtn}>🔊</Text>
           </Pressable>
           <Text style={baseStyle}>
             {parts.map((part, i) => (
-              <Text key={i} style={part.match ? styles.mark : undefined}>
+              <Text key={i} style={part.match ? { backgroundColor: c.markHighlight } : undefined}>
                 {part.text}
               </Text>
             ))}
@@ -198,7 +202,7 @@ export default function VocabularyScreen() {
     return (
       <Text style={baseStyle}>
         {parts.map((part, i) => (
-          <Text key={i} style={part.match ? styles.mark : undefined}>
+          <Text key={i} style={part.match ? { backgroundColor: c.markHighlight } : undefined}>
             {part.text}
           </Text>
         ))}
@@ -216,7 +220,7 @@ export default function VocabularyScreen() {
     const enc = encodeURIComponent(clean);
 
     return (
-      <RNView style={[styles.row, { borderColor: border }]}>
+      <RNView style={[styles.row, { borderColor: c.border }]}>
         {headers.map((h, i) => (
           <RNView key={h} style={styles.cell}>
             {renderCell(item[h] || '', i, h, item, searchQuery)}
@@ -226,13 +230,17 @@ export default function VocabularyScreen() {
           {clean ? (
             <RNView style={styles.actions}>
               <Pressable onPress={() => openUrl(`https://translate.google.com/?sl=de&tl=bn&text=${enc}`)}>
-                <Text style={styles.linkBtn}>Translate</Text>
+                <Text style={[styles.linkBtn, { backgroundColor: c.accent, color: c.linkOnAccent }]}>Translate</Text>
               </Pressable>
               <Pressable onPress={() => openUrl(`https://www.dict.cc/?s=${enc}`)}>
-                <Text style={[styles.linkBtn, styles.linkSecondary]}>Dict.cc</Text>
+                <Text style={[styles.linkBtn, { backgroundColor: c.secondaryBtn, color: c.linkOnAccent }]}>
+                  Dict.cc
+                </Text>
               </Pressable>
               <Pressable onPress={() => openUrl(`https://en.wiktionary.org/wiki/${enc}#German`)}>
-                <Text style={[styles.linkBtn, styles.linkContrast]}>Wiktionary</Text>
+                <Text style={[styles.linkBtn, { backgroundColor: colorScheme === 'dark' ? '#3f3f46' : '#334155', color: c.linkOnAccent }]}>
+                  Wiktionary
+                </Text>
               </Pressable>
             </RNView>
           ) : null}
@@ -242,53 +250,74 @@ export default function VocabularyScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.h1}>German Vocabulary</Text>
+    <ScrollView style={[styles.scroll, { backgroundColor: c.background }]} contentContainerStyle={styles.container}>
+      <Text style={[styles.h1, { color: c.text }]}>German Vocabulary</Text>
 
-      <RNView style={[styles.searchRow, { borderColor: border }]}>
+      <RNView style={[styles.searchRow, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
         <TextInput
           placeholder="Search all vocabulary…"
-          placeholderTextColor="#888"
+          placeholderTextColor={c.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          style={[styles.input, { backgroundColor: inputBg, borderColor: border, color: colorScheme === 'dark' ? '#fff' : '#000' }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: c.backgroundElevated,
+              borderColor: c.border,
+              color: c.text,
+            },
+          ]}
           onSubmitEditing={searchVocabulary}
           returnKeyType="search"
         />
-        <Pressable onPress={searchVocabulary} style={styles.searchBtn}>
-          <Text style={styles.searchBtnText}>Search</Text>
+        <Pressable onPress={searchVocabulary} style={[styles.searchBtn, { backgroundColor: c.accent }]}>
+          <Text style={[styles.searchBtnText, { color: c.linkOnAccent }]}>Search</Text>
         </Pressable>
       </RNView>
-      {searchInfo ? <Text style={styles.info}>{searchInfo}</Text> : null}
+      {searchInfo ? (
+        <Text style={[styles.info, { color: c.textSecondary }]}>{searchInfo}</Text>
+      ) : null}
 
-      <Text style={styles.label}>Page</Text>
-      <RNView style={[styles.pickerWrap, { borderColor: border }]}>
-        <Picker selectedValue={pagePath} onValueChange={(v) => { setPagePath(v); loadCSV(v); }}>
+      <Text style={[styles.label, { color: c.text }]}>Page</Text>
+      <RNView style={[styles.pickerWrap, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
+        <Picker
+          selectedValue={pagePath}
+          onValueChange={(v) => {
+            setPagePath(v);
+            loadCSV(v);
+          }}
+          style={{ color: c.text }}
+          dropdownIconColor={c.text}
+        >
           {pickerItems.map((it) => (
             <Picker.Item key={it.value || 'empty'} label={it.label} value={it.value} />
           ))}
         </Picker>
       </RNView>
 
-      {loading ? <Text style={styles.muted}>Loading…</Text> : null}
-      {error ? <Text style={styles.err}>{error}</Text> : null}
+      {loading ? (
+        <Text style={[styles.muted, { color: c.muted }]}>Loading…</Text>
+      ) : null}
+      {error ? (
+        <Text style={[styles.err, { color: c.error }]}>{error}</Text>
+      ) : null}
 
       {!loading && !rows.length && !error ? (
-        <Text style={styles.muted}>Select a page or run a search.</Text>
+        <Text style={[styles.muted, { color: c.muted }]}>Select a page or run a search.</Text>
       ) : null}
 
       {headers.length > 0 && rows.length > 0 ? (
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator>
             <RNView>
-              <RNView style={[styles.row, styles.headerRow, { borderColor: border }]}>
+              <RNView style={[styles.row, styles.headerRow, { borderColor: c.border, backgroundColor: c.tableHeaderBg }]}>
                 {headers.map((h) => (
                   <RNView key={h} style={styles.cell}>
-                    <Text style={styles.th}>{h}</Text>
+                    <Text style={[styles.th, { color: c.textSecondary }]}>{h}</Text>
                   </RNView>
                 ))}
                 <RNView style={styles.cell}>
-                  <Text style={styles.th}>Actions</Text>
+                  <Text style={[styles.th, { color: c.textSecondary }]}>Actions</Text>
                 </RNView>
               </RNView>
               <FlatList
@@ -303,14 +332,21 @@ export default function VocabularyScreen() {
           {pagePath && pageIndex >= 0 ? (
             <RNView style={styles.pageNav}>
               <Pressable onPress={goPrev} disabled={pageIndex <= 0} style={styles.pageBtn}>
-                <Text style={pageIndex <= 0 ? styles.pageBtnDisabled : undefined}>Prev</Text>
+                <Text style={[pageIndex <= 0 ? styles.pageBtnDisabled : null, { color: c.accent }]}>Prev</Text>
               </Pressable>
-              <Text style={styles.pageLabel}>
+              <Text style={[styles.pageLabel, { color: c.text }]}>
                 {books.find((b) => b.folder === pagePath.split('/')[0])?.name ?? pagePath.split('/')[0]} — Page{' '}
                 {pagePath.split('/')[1]} ({pageIndex + 1} of {allPages.length})
               </Text>
               <Pressable onPress={goNext} disabled={pageIndex >= allPages.length - 1} style={styles.pageBtn}>
-                <Text style={pageIndex >= allPages.length - 1 ? styles.pageBtnDisabled : undefined}>Next</Text>
+                <Text
+                  style={[
+                    pageIndex >= allPages.length - 1 ? styles.pageBtnDisabled : null,
+                    { color: c.accent },
+                  ]}
+                >
+                  Next
+                </Text>
               </Pressable>
             </RNView>
           ) : null}
@@ -321,33 +357,41 @@ export default function VocabularyScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   container: { padding: 16, paddingBottom: 40 },
-  h1: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  searchRow: { flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' },
-  input: { flex: 1, minWidth: 200, borderWidth: 1, borderRadius: 8, padding: 10 },
-  searchBtn: { backgroundColor: '#2f95dc', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
-  searchBtnText: { color: '#fff', fontWeight: '600' },
-  info: { fontSize: 13, opacity: 0.8, marginBottom: 8 },
-  label: { marginTop: 12, marginBottom: 4, fontWeight: '600' },
-  pickerWrap: { borderWidth: 1, borderRadius: 8, overflow: 'hidden', marginBottom: 12 },
-  muted: { opacity: 0.7, textAlign: 'center', marginVertical: 12 },
-  err: { color: '#c00', marginVertical: 8 },
+  h1: { fontSize: 22, fontWeight: '700', marginBottom: 14 },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+    flexWrap: 'wrap',
+    borderRadius: 12,
+    padding: 8,
+    borderWidth: 1,
+  },
+  input: { flex: 1, minWidth: 200, borderWidth: 1, borderRadius: 10, padding: 12 },
+  searchBtn: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 10 },
+  searchBtnText: { fontWeight: '600' },
+  info: { fontSize: 13, marginBottom: 8 },
+  label: { marginTop: 12, marginBottom: 6, fontWeight: '600', fontSize: 15 },
+  pickerWrap: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginBottom: 12 },
+  muted: { textAlign: 'center', marginVertical: 12 },
+  err: { marginVertical: 8, fontWeight: '500' },
   row: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
-  headerRow: { backgroundColor: 'rgba(127,127,127,0.15)' },
+  headerRow: {},
   cell: { width: 140, padding: 8, justifyContent: 'center' },
-  th: { fontWeight: '700', fontSize: 12 },
+  cellRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  th: { fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.3 },
   wordCell: { fontWeight: '700' },
-  pronCell: { fontStyle: 'italic', opacity: 0.85 },
-  meaningCell: { color: '#2f95dc' },
-  sentenceCell: { fontStyle: 'italic', fontSize: 13, opacity: 0.9 },
-  mark: { backgroundColor: 'rgba(255,230,120,0.5)' },
+  pronCell: { fontStyle: 'italic' },
+  meaningCell: { fontWeight: '500' },
+  sentenceCell: { fontStyle: 'italic', fontSize: 13 },
   audioBtn: { fontSize: 16 },
   actions: { gap: 6 },
-  linkBtn: { fontSize: 11, fontWeight: '700', color: '#fff', backgroundColor: '#2f95dc', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden', textAlign: 'center' },
-  linkSecondary: { backgroundColor: '#6c757d' },
-  linkContrast: { backgroundColor: '#212529' },
-  pageNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
+  linkBtn: { fontSize: 11, fontWeight: '700', paddingVertical: 5, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden', textAlign: 'center' },
+  pageNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 18, flexWrap: 'wrap' },
   pageBtn: { padding: 8 },
-  pageBtnDisabled: { opacity: 0.4 },
-  pageLabel: { fontWeight: '600' },
+  pageBtnDisabled: { opacity: 0.35 },
+  pageLabel: { fontWeight: '600', maxWidth: 280, textAlign: 'center' },
 });

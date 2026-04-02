@@ -2,17 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View as RNView,
-} from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View as RNView } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { allPages, books, parseCSV } from '@/lib/config';
 import { contentUrl } from '@/lib/contentBase';
@@ -24,6 +17,7 @@ import {
   stripArticle,
 } from '@/lib/flashcards/engine';
 import type { Card, CardStatus, FilterMode, QuizMode, ProgressHistoryDay, StudyMode } from '@/lib/flashcards/types';
+import { uiAlert } from '@/lib/uiAlert';
 import { Picker } from '@react-native-picker/picker';
 
 const PROGRESS_KEY = 'flashcardProgress';
@@ -39,13 +33,13 @@ async function fetchPageCards(pagePath: string): Promise<Card[]> {
 
 export default function FlashcardsScreen() {
   const colorScheme = useColorScheme();
-  const border = colorScheme === 'dark' ? '#444' : '#ccc';
-  const inputBg = colorScheme === 'dark' ? '#1c1c1c' : '#fff';
+  const c = Colors[colorScheme];
 
   const [studyMode, setStudyMode] = useState<StudyMode>('page');
   const [quizMode, setQuizMode] = useState<QuizMode>('normal');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [pagePath, setPagePath] = useState('');
+  /** Default page so web users can start without relying on Picker firing. */
+  const [pagePath, setPagePath] = useState('book-1/1');
   const [customWords, setCustomWords] = useState('');
 
   const [sessionCards, setSessionCards] = useState<Card[]>([]);
@@ -63,6 +57,7 @@ export default function FlashcardsScreen() {
   const [tick, setTick] = useState(0);
   const [quizChoices, setQuizChoices] = useState<string[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +102,7 @@ export default function FlashcardsScreen() {
   );
 
   const pickerItems = useMemo(() => {
-    const items: { label: string; value: string }[] = [{ label: 'Select Page…', value: '' }];
+    const items: { label: string; value: string }[] = [];
     books.forEach((book) => {
       book.pages.forEach((p) => {
         items.push({ label: `${book.name} — Page ${p}`, value: `${book.folder}/${p}` });
@@ -155,12 +150,12 @@ export default function FlashcardsScreen() {
   const startSessionWithDeck = useCallback(
     (deck: Card[]) => {
       if (!deck.length) {
-        Alert.alert('Error', 'No cards found');
+        uiAlert('Error', 'No cards found');
         return;
       }
       const pool = weightedPool(deck);
       if (!pool.length) {
-        Alert.alert('Filter', `No cards match the "${filterMode}" filter. Try "All cards".`);
+        uiAlert('Filter', `No cards match the "${filterMode}" filter. Try "All cards".`);
         return;
       }
       setSessionCards(deck);
@@ -179,18 +174,24 @@ export default function FlashcardsScreen() {
 
   const loadPage = async () => {
     if (!pagePath) {
-      Alert.alert('Error', 'Please select a page');
+      uiAlert('Error', 'Please select a page');
       return;
     }
+    setLoadingPage(true);
     try {
       const rows = await fetchPageCards(pagePath);
       if (!rows.length) {
-        Alert.alert('Error', 'No data found');
+        uiAlert(
+          'Could not load vocabulary',
+          `No data at ${contentUrl(`lws/csv/${pagePath}.csv`)}. For local web dev, create apps/german-app/public/lws → ../../../lws (symlink to repo lws) so the dev server can serve CSV files.`,
+        );
         return;
       }
       startSessionWithDeck(rows);
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Load failed');
+      uiAlert('Error', e instanceof Error ? e.message : 'Load failed');
+    } finally {
+      setLoadingPage(false);
     }
   };
 
@@ -204,7 +205,7 @@ export default function FlashcardsScreen() {
       }
       startSessionWithDeck(acc);
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Load failed');
+      uiAlert('Error', e instanceof Error ? e.message : 'Load failed');
     } finally {
       setLoadingAll(false);
     }
@@ -213,7 +214,7 @@ export default function FlashcardsScreen() {
   const loadCustom = async () => {
     const input = customWords.trim();
     if (!input) {
-      Alert.alert('Error', 'Please enter some words');
+      uiAlert('Error', 'Please enter some words');
       return;
     }
     const words = input.split('\n').map((w) => w.trim()).filter(Boolean);
@@ -228,7 +229,7 @@ export default function FlashcardsScreen() {
       );
     }
     if (!acc.length) {
-      Alert.alert('Error', 'No matching words found');
+      uiAlert('Error', 'No matching words found');
       return;
     }
     shuffleArray(acc);
@@ -378,12 +379,17 @@ export default function FlashcardsScreen() {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.setup}>
-        <Text style={styles.h1}>Flashcards</Text>
+      <ScrollView style={[styles.scroll, { backgroundColor: c.background }]} contentContainerStyle={styles.setup}>
+        <Text style={[styles.h1, { color: c.text }]}>Flashcards</Text>
 
-        <Text style={styles.label}>Study source</Text>
-        <RNView style={[styles.pickerWrap, { borderColor: border }]}>
-          <Picker selectedValue={studyMode} onValueChange={(v) => setStudyMode(v as StudyMode)}>
+        <Text style={[styles.label, { color: c.textSecondary }]}>Study source</Text>
+        <RNView style={[styles.pickerWrap, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
+          <Picker
+            selectedValue={studyMode}
+            onValueChange={(v) => setStudyMode(v as StudyMode)}
+            style={{ color: c.text }}
+            dropdownIconColor={c.text}
+          >
             <Picker.Item label="Single page" value="page" />
             <Picker.Item label="All pages (loads full deck)" value="all" />
             <Picker.Item label="Custom word list" value="custom" />
@@ -391,8 +397,8 @@ export default function FlashcardsScreen() {
         </RNView>
 
         {studyMode === 'page' ? (
-          <RNView style={[styles.pickerWrap, { borderColor: border }]}>
-            <Picker selectedValue={pagePath} onValueChange={setPagePath}>
+          <RNView style={[styles.pickerWrap, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
+            <Picker selectedValue={pagePath} onValueChange={setPagePath} style={{ color: c.text }} dropdownIconColor={c.text}>
               {pickerItems.map((it) => (
                 <Picker.Item key={it.value || 'e'} label={it.label} value={it.value} />
               ))}
@@ -403,29 +409,39 @@ export default function FlashcardsScreen() {
         {studyMode === 'custom' ? (
           <TextInput
             placeholder="One word per line…"
-            placeholderTextColor="#888"
+            placeholderTextColor={c.muted}
             value={customWords}
             onChangeText={setCustomWords}
             multiline
             style={[
               styles.customInput,
-              { borderColor: border, backgroundColor: inputBg, color: colorScheme === 'dark' ? '#fff' : '#000' },
+              { borderColor: c.border, backgroundColor: c.backgroundElevated, color: c.text },
             ]}
           />
         ) : null}
 
-        <Text style={styles.label}>Card face mode</Text>
-        <RNView style={[styles.pickerWrap, { borderColor: border }]}>
-          <Picker selectedValue={quizMode} onValueChange={(v) => setQuizMode(v as QuizMode)}>
+        <Text style={[styles.label, { color: c.textSecondary }]}>Card face mode</Text>
+        <RNView style={[styles.pickerWrap, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
+          <Picker
+            selectedValue={quizMode}
+            onValueChange={(v) => setQuizMode(v as QuizMode)}
+            style={{ color: c.text }}
+            dropdownIconColor={c.text}
+          >
             <Picker.Item label="Normal (German → details)" value="normal" />
             <Picker.Item label="Reverse (meanings → German)" value="reverse" />
             <Picker.Item label="Quiz (multiple choice)" value="quiz" />
           </Picker>
         </RNView>
 
-        <Text style={styles.label}>Filter</Text>
-        <RNView style={[styles.pickerWrap, { borderColor: border }]}>
-          <Picker selectedValue={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
+        <Text style={[styles.label, { color: c.textSecondary }]}>Filter</Text>
+        <RNView style={[styles.pickerWrap, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
+          <Picker
+            selectedValue={filterMode}
+            onValueChange={(v) => setFilterMode(v as FilterMode)}
+            style={{ color: c.text }}
+            dropdownIconColor={c.text}
+          >
             <Picker.Item label="All cards" value="all" />
             <Picker.Item label="Unknown" value="unknown" />
             <Picker.Item label="Review" value="review" />
@@ -434,20 +450,38 @@ export default function FlashcardsScreen() {
           </Picker>
         </RNView>
 
-        <Pressable style={styles.primaryBtn} onPress={startStudy} disabled={loadingAll}>
-          <Text style={styles.primaryBtnText}>{loadingAll ? 'Loading all pages…' : 'Start study session'}</Text>
+        <Pressable
+          style={[
+            styles.primaryBtn,
+            { backgroundColor: c.accent },
+            (loadingAll || loadingPage) && styles.primaryBtnDisabled,
+          ]}
+          onPress={startStudy}
+          disabled={loadingAll || loadingPage}
+        >
+          <Text style={[styles.primaryBtnText, { color: c.linkOnAccent }]}>
+            {loadingAll ? 'Loading all pages…' : loadingPage ? 'Loading page…' : 'Start study session'}
+          </Text>
         </Pressable>
 
-        <Text style={styles.statsSummary}>
+        <Text style={[styles.statsSummary, { color: c.textSecondary }]}>
           Saved progress — marked in this app: review the counts while you study. (History:{' '}
           {Object.keys(progressHistory).length} days)
         </Text>
       </ScrollView>
 
-      <Modal visible={studyOpen} animationType="slide">
-        <View style={[styles.modalRoot, colorScheme === 'dark' ? styles.modalDark : styles.modalLight]}>
+      <Modal
+        visible={studyOpen}
+        animationType="slide"
+        presentationStyle={Platform.OS === 'ios' ? 'fullScreen' : undefined}
+        onRequestClose={() => {
+          setStudyOpen(false);
+          setCurrentCard(null);
+        }}
+      >
+        <View style={[styles.modalRoot, { backgroundColor: c.backgroundElevated }]}>
           <RNView style={styles.modalTop}>
-            <Text style={styles.sessionMeta}>
+            <Text style={[styles.sessionMeta, { color: c.textSecondary }]}>
               {sessionStudied} new marks · {sessionText}
             </Text>
             <Pressable
@@ -457,10 +491,10 @@ export default function FlashcardsScreen() {
               }}
               style={styles.closeBtn}
             >
-              <Text style={styles.closeBtnText}>Exit</Text>
+              <Text style={[styles.closeBtnText, { color: c.accent }]}>Exit</Text>
             </Pressable>
           </RNView>
-          <Text style={styles.progressText}>{progressLabel}</Text>
+          <Text style={[styles.progressText, { color: c.muted }]}>{progressLabel}</Text>
 
           {currentCard ? (
             <>
@@ -470,29 +504,35 @@ export default function FlashcardsScreen() {
 
               {quizMode === 'quiz' ? (
                 <RNView style={styles.quizArea}>
-                  <Text style={styles.cardFront}>{frontText}</Text>
-                  <Text style={styles.hint}>{hintText}</Text>
+                  <Text style={[styles.cardFront, { color: c.text }]}>{frontText}</Text>
+                  <Text style={[styles.hint, { color: c.muted }]}>{hintText}</Text>
                   {quizChoices.map((ch) => (
-                    <Pressable key={ch} style={styles.choiceBtn} onPress={() => checkQuiz(ch)}>
-                      <Text style={styles.choiceText}>{stripArticle(ch)}</Text>
+                    <Pressable
+                      key={ch}
+                      style={[styles.choiceBtn, { borderColor: c.accent, backgroundColor: c.accentMuted }]}
+                      onPress={() => checkQuiz(ch)}
+                    >
+                      <Text style={[styles.choiceText, { color: c.text }]}>{stripArticle(ch)}</Text>
                     </Pressable>
                   ))}
                 </RNView>
               ) : (
-                <Pressable onPress={flip} style={styles.cardPress}>
+                <Pressable onPress={flip} style={[styles.cardPress, { borderColor: c.border, backgroundColor: c.background }]}>
                   {!isFlipped ? (
                     <RNView style={styles.cardFace}>
-                      <Text style={styles.cardFront}>{frontText}</Text>
-                      <Text style={styles.hint}>{hintText}</Text>
+                      <Text style={[styles.cardFront, { color: c.text }]}>{frontText}</Text>
+                      <Text style={[styles.hint, { color: c.muted }]}>{hintText}</Text>
                     </RNView>
                   ) : (
                     <RNView style={styles.cardBack}>
-                      <Text style={styles.backLine}>{currentCard.word}</Text>
-                      <Text style={styles.backLine}>{currentCard.pronunciation}</Text>
-                      <Text style={styles.backLine}>{currentCard.banglaMeaning}</Text>
-                      <Text style={styles.backLine}>{currentCard.englishMeaning}</Text>
-                      {currentCard.partizipII ? <Text style={styles.backLine}>{currentCard.partizipII}</Text> : null}
-                      <Text style={styles.backLine}>{currentCard.sentence}</Text>
+                      <Text style={[styles.backLine, { color: c.text }]}>{currentCard.word}</Text>
+                      <Text style={[styles.backLine, { color: c.textSecondary }]}>{currentCard.pronunciation}</Text>
+                      <Text style={[styles.backLine, { color: c.text }]}>{currentCard.banglaMeaning}</Text>
+                      <Text style={[styles.backLine, { color: c.text }]}>{currentCard.englishMeaning}</Text>
+                      {currentCard.partizipII ? (
+                        <Text style={[styles.backLine, { color: c.textSecondary }]}>{currentCard.partizipII}</Text>
+                      ) : null}
+                      <Text style={[styles.backLine, { color: c.textSecondary }]}>{currentCard.sentence}</Text>
                     </RNView>
                   )}
                 </Pressable>
@@ -500,19 +540,19 @@ export default function FlashcardsScreen() {
 
               <RNView style={styles.quickRow}>
                 <Pressable onPress={playAudio}>
-                  <Text style={styles.link}>Audio</Text>
+                  <Text style={[styles.link, { color: c.accent }]}>Audio</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => openLink(`https://www.dict.cc/?s=${encodeURIComponent(stripArticle(currentCard.word))}`)}
                 >
-                  <Text style={styles.link}>Dict.cc</Text>
+                  <Text style={[styles.link, { color: c.accent }]}>Dict.cc</Text>
                 </Pressable>
                 <Pressable
                   onPress={() =>
                     openLink(`https://en.wiktionary.org/wiki/${encodeURIComponent(stripArticle(currentCard.word))}#German`)
                   }
                 >
-                  <Text style={styles.link}>Wiktionary</Text>
+                  <Text style={[styles.link, { color: c.accent }]}>Wiktionary</Text>
                 </Pressable>
               </RNView>
 
@@ -532,15 +572,15 @@ export default function FlashcardsScreen() {
 
               <RNView style={styles.navRow}>
                 <Pressable style={styles.navBtn} onPress={goPrev}>
-                  <Text>Previous</Text>
+                  <Text style={{ color: c.accent, fontWeight: '600' }}>Previous</Text>
                 </Pressable>
                 <Pressable style={styles.navBtn} onPress={goNext}>
-                  <Text>Next</Text>
+                  <Text style={{ color: c.accent, fontWeight: '600' }}>Next</Text>
                 </Pressable>
               </RNView>
             </>
           ) : (
-            <Text style={styles.muted}>Preparing cards…</Text>
+            <Text style={[styles.muted, { color: c.muted }]}>Preparing cards…</Text>
           )}
         </View>
       </Modal>
@@ -549,35 +589,35 @@ export default function FlashcardsScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   setup: { padding: 16, paddingBottom: 48 },
   h1: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
   label: { fontWeight: '600', marginTop: 8, marginBottom: 4 },
-  pickerWrap: { borderWidth: 1, borderRadius: 8, overflow: 'hidden' },
-  customInput: { minHeight: 100, borderWidth: 1, borderRadius: 8, padding: 10, marginTop: 8, textAlignVertical: 'top' },
-  primaryBtn: { marginTop: 20, backgroundColor: '#2f95dc', padding: 14, borderRadius: 10, alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontWeight: '700' },
-  statsSummary: { marginTop: 16, fontSize: 13, opacity: 0.85 },
+  pickerWrap: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  customInput: { minHeight: 100, borderWidth: 1, borderRadius: 12, padding: 16, marginTop: 8, textAlignVertical: 'top' },
+  primaryBtn: { marginTop: 20, padding: 14, borderRadius: 12, alignItems: 'center' },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { fontWeight: '700', fontSize: 16 },
+  statsSummary: { marginTop: 16, fontSize: 13, lineHeight: 18 },
   modalRoot: { flex: 1, padding: 16, paddingTop: 48 },
-  modalLight: { backgroundColor: '#fff' },
-  modalDark: { backgroundColor: '#121212' },
   modalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sessionMeta: { fontSize: 13, opacity: 0.85 },
+  sessionMeta: { fontSize: 13 },
   closeBtn: { padding: 8 },
-  closeBtnText: { color: '#2f95dc', fontWeight: '700' },
-  progressText: { marginVertical: 8, fontSize: 12, opacity: 0.8 },
+  closeBtnText: { fontWeight: '700' },
+  progressText: { marginVertical: 8, fontSize: 12 },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 8 },
   badgeText: { color: '#fff', fontWeight: '700', fontSize: 11 },
-  cardPress: { minHeight: 200, borderWidth: 1, borderColor: '#ccc', borderRadius: 12, padding: 16, justifyContent: 'center' },
+  cardPress: { minHeight: 200, borderWidth: 1, borderRadius: 14, padding: 16, justifyContent: 'center' },
   cardFace: { alignItems: 'center' },
   cardBack: { gap: 6 },
   cardFront: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
   hint: { marginTop: 8, opacity: 0.75, textAlign: 'center' },
   backLine: { fontSize: 16 },
   quizArea: { gap: 8 },
-  choiceBtn: { borderWidth: 1, borderColor: '#2f95dc', borderRadius: 8, padding: 12 },
+  choiceBtn: { borderWidth: 1, borderRadius: 10, padding: 12 },
   choiceText: { fontSize: 16, textAlign: 'center' },
   quickRow: { flexDirection: 'row', gap: 12, marginTop: 12, flexWrap: 'wrap' },
-  link: { color: '#2f95dc', fontWeight: '600' },
+  link: { fontWeight: '600' },
   markRow: { flexDirection: 'row', gap: 8, marginTop: 16, flexWrap: 'wrap' },
   markBtn: { flex: 1, minWidth: 90, padding: 10, borderRadius: 8, alignItems: 'center' },
   known: { backgroundColor: '#2e7d32' },

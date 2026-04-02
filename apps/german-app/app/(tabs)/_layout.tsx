@@ -15,11 +15,24 @@ function TabBarIcon(props: { name: React.ComponentProps<typeof FontAwesome>['nam
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  const c = Colors[colorScheme];
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
+        tabBarActiveTintColor: c.tint,
+        tabBarInactiveTintColor: c.tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: c.backgroundElevated,
+          borderTopColor: c.border,
+        },
         headerShown: useClientOnlyValue(false, true),
+        headerStyle: {
+          backgroundColor: c.backgroundElevated,
+        },
+        headerTintColor: c.text,
+        headerTitleStyle: { fontWeight: '600' },
+        headerShadowVisible: false,
         headerRight: () => (
           <Pressable style={{ marginRight: 16 }}>
             <ThemeToggleButton />

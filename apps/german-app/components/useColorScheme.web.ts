@@ -1,8 +1,12 @@
-// NOTE: The default React Native styling doesn't support server rendering.
-// Server rendered styles should not change between the first render of the HTML
-// and the first render on the client. Typically, web developers will use CSS media queries
-// to render different styles on the client and server, these aren't directly supported in React Native
-// but can be achieved using a styling library like Nativewind.
-export function useColorScheme() {
-  return 'light';
+import { useThemePreference } from '@/contexts/ThemePreferenceContext';
+
+import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+
+/**
+ * Match native theme behavior. Default to `light` for the first paint so static/SSR HTML
+ * matches the client before hydration (see Expo template notes in useClientOnlyValue.web).
+ */
+export function useColorScheme(): 'light' | 'dark' {
+  const { colorScheme } = useThemePreference();
+  return useClientOnlyValue<'light' | 'dark', 'light' | 'dark'>('light', colorScheme);
 }

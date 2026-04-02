@@ -15,6 +15,7 @@ export function contentUrl(relPath: string): string {
   if (Platform.OS === 'web') {
     if (envBase) return `${envBase}/${path}`;
     if (typeof window !== 'undefined') {
+      // Relative to current URL path (works for /flashcards and for /repo/ on GitHub Pages).
       return path;
     }
     return `${DEFAULT_CONTENT_ORIGIN}/${path}`;

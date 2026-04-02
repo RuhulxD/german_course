@@ -64,6 +64,12 @@ CSVs are UTF-8. The app supports pages **1–38**; `flashcards.js` uses `totalPa
 - Open `index.html` in a browser (or serve the folder with any static server).
 - No build step; no backend required.
 
+### Expo app (`apps/german-app`, React Native + web)
+
+- Install and start web: `cd apps/german-app && npm install && npm run web`.
+- **Local CSV / markdown**: The dev server serves static files from `apps/german-app/public/`. That folder should contain symlinks to the repo content roots, for example `public/lws` → `../../../lws`, and the same pattern for `grammar` and `other`. Without `public/lws`, flashcards and vocabulary cannot load CSVs on `localhost`.
+- Production web build: `npm run export:web` (outputs `dist/` and copies `lws`, `grammar`, `other` into it for GitHub Pages).
+
 ## Adding or Updating Vocabulary
 
 1. **Raw list**: Edit or add a file under `lws/pages/` (e.g. `39`).

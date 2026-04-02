@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
@@ -15,25 +15,49 @@ type NavCardProps = {
 
 function NavCard({ href, icon, title, description }: NavCardProps) {
   const colorScheme = useColorScheme();
-  const border = colorScheme === 'dark' ? '#333' : '#e0e0e0';
+  const c = Colors[colorScheme];
 
   return (
     <Link href={href} asChild>
-      <Pressable style={({ pressed }) => [styles.card, { borderColor: border, opacity: pressed ? 0.85 : 1 }]}>
-        <FontAwesome name={icon} size={40} color={Colors[colorScheme].tint} style={styles.cardIcon} />
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardDesc}>{description}</Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          {
+            backgroundColor: c.backgroundElevated,
+            borderColor: c.border,
+            opacity: pressed ? 0.92 : 1,
+            ...Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: colorScheme === 'dark' ? 0.35 : 0.08,
+                shadowRadius: 4,
+              },
+              android: { elevation: 2 },
+              default: {},
+            }),
+          },
+        ]}
+      >
+        <FontAwesome name={icon} size={40} color={c.tint} style={styles.cardIcon} />
+        <Text style={[styles.cardTitle, { color: c.text }]}>{title}</Text>
+        <Text style={[styles.cardDesc, { color: c.textSecondary }]}>{description}</Text>
       </Pressable>
     </Link>
   );
 }
 
 export default function HomeScreen() {
+  const colorScheme = useColorScheme();
+  const c = Colors[colorScheme];
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={[styles.scroll, { backgroundColor: c.background }]} contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>German Course</Text>
-        <Text style={styles.subtitle}>Vocabulary, grammar, and flashcards</Text>
+        <Text style={[styles.title, { color: c.text }]}>German Course</Text>
+        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
+          Vocabulary, grammar, and flashcards
+        </Text>
       </View>
 
       <NavCard
@@ -59,6 +83,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   container: {
     padding: 20,
     paddingBottom: 40,
@@ -79,14 +104,13 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 8,
     fontSize: 16,
-    opacity: 0.8,
     textAlign: 'center',
   },
   card: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     alignItems: 'center',
   },
   cardIcon: {
@@ -100,7 +124,6 @@ const styles = StyleSheet.create({
   cardDesc: {
     fontSize: 14,
     textAlign: 'center',
-    opacity: 0.85,
-    lineHeight: 20,
+    lineHeight: 21,
   },
 });
