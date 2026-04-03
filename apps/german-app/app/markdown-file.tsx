@@ -75,14 +75,14 @@ export default function MarkdownFileScreen() {
         backgroundColor: c.accentMuted,
       },
       fence: {
-        backgroundColor: colorScheme === 'dark' ? '#27272a' : '#f4f4f5',
+        backgroundColor: colorScheme === 'dark' ? c.backgroundElevated : c.tableHeaderBg,
         borderRadius: 8,
         padding: 10,
         borderWidth: 1,
         borderColor: c.border,
       },
       code_inline: {
-        backgroundColor: colorScheme === 'dark' ? '#27272a' : '#f4f4f5',
+        backgroundColor: colorScheme === 'dark' ? c.backgroundElevated : c.tableHeaderBg,
         color: c.text,
         paddingHorizontal: 6,
         borderRadius: 4,

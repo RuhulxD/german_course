@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -7,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View as RNView,
 } from 'react-native';
 
@@ -32,10 +34,16 @@ function highlightParts(text: string, q: string): { text: string; match: boolean
   }));
 }
 
+const H_PAD = 20;
+/** Cap width on large screens; shrink with viewport so layout stays responsive */
+const CONTENT_MAX_CAP = 1280;
+
 export default function VocabularyScreen() {
   const colorScheme = useColorScheme();
   const c = Colors[colorScheme];
   const pc = pickerChrome(colorScheme);
+  const { width: winW } = useWindowDimensions();
+  const contentMaxWidth = Math.min(Math.max(winW - H_PAD * 2, 280), CONTENT_MAX_CAP);
 
   const [pagePath, setPagePath] = useState('book-1/1');
   const [rows, setRows] = useState<Record<string, string>[]>([]);
@@ -240,7 +248,7 @@ export default function VocabularyScreen() {
                 </Text>
               </Pressable>
               <Pressable onPress={() => openUrl(`https://en.wiktionary.org/wiki/${enc}#German`)}>
-                <Text style={[styles.linkBtn, { backgroundColor: colorScheme === 'dark' ? '#3f3f46' : '#334155', color: c.linkOnAccent }]}>
+                <Text style={[styles.linkBtn, { backgroundColor: c.tertiaryBtn, color: c.onTertiary }]}>
                   Wiktionary
                 </Text>
               </Pressable>
@@ -252,8 +260,15 @@ export default function VocabularyScreen() {
   };
 
   return (
-    <ScrollView style={[styles.scroll, { backgroundColor: c.background }]} contentContainerStyle={styles.container}>
-      <Text style={[styles.h1, { color: c.text }]}>German Vocabulary</Text>
+    <ScrollView
+      style={[styles.scroll, { backgroundColor: c.background }]}
+      contentContainerStyle={[styles.container, { maxWidth: contentMaxWidth }]}
+    >
+      <RNView style={styles.heroWrap}>
+        <LinearGradient colors={[...c.heroGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+          <Text style={[styles.heroTitle, { color: c.heroOnGradient }]}>German Vocabulary</Text>
+        </LinearGradient>
+      </RNView>
 
       <RNView style={[styles.searchRow, { borderColor: c.border, backgroundColor: c.backgroundElevated }]}>
         <TextInput
@@ -361,8 +376,17 @@ export default function VocabularyScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  container: { padding: 16, paddingBottom: 40 },
-  h1: { fontSize: 22, fontWeight: '700', marginBottom: 14 },
+  container: { padding: H_PAD, paddingBottom: 40, alignSelf: 'center', width: '100%' },
+  heroWrap: { marginHorizontal: -H_PAD, marginTop: -H_PAD, marginBottom: 14 },
+  hero: {
+    paddingTop: 20,
+    paddingBottom: 18,
+    paddingHorizontal: H_PAD,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    alignItems: 'center',
+  },
+  heroTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
   searchRow: {
     flexDirection: 'row',
     gap: 8,

@@ -1,8 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View as RNView } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -53,12 +54,12 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={[styles.scroll, { backgroundColor: c.background }]} contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: c.text }]}>German Course</Text>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Vocabulary, grammar, and flashcards
-        </Text>
-      </View>
+      <RNView style={styles.heroWrap}>
+        <LinearGradient colors={[...c.heroGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+          <Text style={[styles.title, { color: c.heroOnGradient }]}>German Course</Text>
+          <Text style={[styles.subtitle, { color: c.heroMutedOnGradient }]}>Vocabulary, grammar, and flashcards</Text>
+        </LinearGradient>
+      </RNView>
 
       <NavCard
         href="/flashcards"
@@ -91,10 +92,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  header: {
+  heroWrap: { marginHorizontal: -20, marginTop: -20, marginBottom: 20 },
+  hero: {
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    marginBottom: 28,
-    backgroundColor: 'transparent',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   title: {
     fontSize: 28,
