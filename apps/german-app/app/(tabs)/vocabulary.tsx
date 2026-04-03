@@ -15,6 +15,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { allPages, books, parseCSV } from '@/lib/config';
 import { contentUrl } from '@/lib/contentBase';
+import { pickerChrome } from '@/lib/pickerChrome';
 import { Picker } from '@react-native-picker/picker';
 
 function escapeRegex(s: string): string {
@@ -34,6 +35,7 @@ function highlightParts(text: string, q: string): { text: string; match: boolean
 export default function VocabularyScreen() {
   const colorScheme = useColorScheme();
   const c = Colors[colorScheme];
+  const pc = pickerChrome(colorScheme);
 
   const [pagePath, setPagePath] = useState('book-1/1');
   const [rows, setRows] = useState<Record<string, string>[]>([]);
@@ -286,11 +288,12 @@ export default function VocabularyScreen() {
             setPagePath(v);
             loadCSV(v);
           }}
-          style={{ color: c.text }}
-          dropdownIconColor={c.text}
+          style={pc.style}
+          itemStyle={pc.itemStyle}
+          dropdownIconColor={pc.dropdownIconColor}
         >
           {pickerItems.map((it) => (
-            <Picker.Item key={it.value || 'empty'} label={it.label} value={it.value} />
+            <Picker.Item key={it.value || 'empty'} label={it.label} value={it.value} color={pc.itemColor} />
           ))}
         </Picker>
       </RNView>

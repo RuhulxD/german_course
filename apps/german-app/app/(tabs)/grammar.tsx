@@ -5,12 +5,14 @@ import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { markdownLessons } from '@/lib/markdownLessons';
+import { pickerChrome } from '@/lib/pickerChrome';
 import { Picker } from '@react-native-picker/picker';
 import { useState } from 'react';
 
 export default function GrammarScreen() {
   const colorScheme = useColorScheme();
   const c = Colors[colorScheme];
+  const pc = pickerChrome(colorScheme);
   const [selected, setSelected] = useState(markdownLessons[0]?.path ?? '');
 
   return (
@@ -21,11 +23,12 @@ export default function GrammarScreen() {
         <Picker
           selectedValue={selected}
           onValueChange={setSelected}
-          style={{ color: c.text }}
-          dropdownIconColor={c.text}
+          style={pc.style}
+          itemStyle={pc.itemStyle}
+          dropdownIconColor={pc.dropdownIconColor}
         >
           {markdownLessons.map((l) => (
-            <Picker.Item key={l.path} label={l.label} value={l.path} />
+            <Picker.Item key={l.path} label={l.label} value={l.path} color={pc.itemColor} />
           ))}
         </Picker>
       </View>

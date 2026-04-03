@@ -6,7 +6,7 @@ export type BookConfig = {
 
 export const books: BookConfig[] = [
   { name: 'Book 1', folder: 'book-1', pages: Array.from({ length: 52 }, (_, i) => i + 1) },
-  { name: 'Book 3', folder: 'book-3', pages: Array.from({ length: 17 }, (_, i) => i + 1) },
+  { name: 'Book 3', folder: 'book-3', pages: Array.from({ length: 28 }, (_, i) => i + 1) },
 ];
 
 export const allPages: string[] = books.flatMap((book) =>

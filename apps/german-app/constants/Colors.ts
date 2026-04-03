@@ -1,49 +1,56 @@
-const tint = '#2f95dc';
-const tintDark = '#7ec8ff';
+const tint = '#2563eb';
+const tintDark = '#93c5fd';
 
 /**
  * Shared palette — use `Colors[useColorScheme()]` in screens.
+ * Light: near-white surfaces. Dark: soft gray (not OLED black).
  */
 const Colors = {
   light: {
-    text: '#111827',
-    textSecondary: '#4b5563',
-    background: '#f2f4f8',
-    backgroundElevated: '#ffffff',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    background: '#ffffff',
+    backgroundElevated: '#f8fafc',
     tint,
-    tabIconDefault: '#9ca3af',
+    tabIconDefault: '#94a3b8',
     tabIconSelected: tint,
-    border: '#e5e7eb',
-    borderStrong: '#d1d5db',
-    muted: '#6b7280',
-    error: '#b91c1c',
+    border: '#e2e8f0',
+    borderStrong: '#cbd5e1',
+    muted: '#64748b',
+    error: '#dc2626',
     accent: tint,
-    accentMuted: 'rgba(47, 149, 220, 0.12)',
-    markHighlight: 'rgba(253, 224, 71, 0.55)',
-    tableHeaderBg: 'rgba(0, 0, 0, 0.04)',
+    accentMuted: 'rgba(37, 99, 235, 0.1)',
+    markHighlight: 'rgba(254, 240, 138, 0.85)',
+    tableHeaderBg: '#f1f5f9',
     linkOnAccent: '#ffffff',
     secondaryBtn: '#64748b',
     contrastBtn: '#1e293b',
+    /** Native `<select>` / Picker: explicit bg + fg so value/options stay readable */
+    pickerSurface: '#ffffff',
+    pickerForeground: '#0f172a',
   },
   dark: {
-    text: '#f4f4f5',
-    textSecondary: '#a1a1aa',
-    background: '#09090b',
-    backgroundElevated: '#18181b',
+    text: '#f8fafc',
+    textSecondary: '#c5cad3',
+    background: '#383c44',
+    backgroundElevated: '#454a54',
     tint: tintDark,
-    tabIconDefault: '#71717a',
+    tabIconDefault: '#9ca3af',
     tabIconSelected: tintDark,
-    border: '#3f3f46',
-    borderStrong: '#52525b',
-    muted: '#a1a1aa',
-    error: '#f87171',
+    border: '#5c626c',
+    borderStrong: '#6b7280',
+    muted: '#b8bec8',
+    error: '#fca5a5',
     accent: tintDark,
-    accentMuted: 'rgba(126, 200, 255, 0.12)',
-    markHighlight: 'rgba(250, 204, 21, 0.35)',
-    tableHeaderBg: 'rgba(255, 255, 255, 0.06)',
-    linkOnAccent: '#ffffff',
+    accentMuted: 'rgba(147, 197, 253, 0.18)',
+    markHighlight: 'rgba(253, 224, 71, 0.45)',
+    tableHeaderBg: 'rgba(255, 255, 255, 0.1)',
+    linkOnAccent: '#0f172a',
     secondaryBtn: '#64748b',
-    contrastBtn: '#e4e4e7',
+    contrastBtn: '#f1f5f9',
+    /** Light control on dark UI — avoids white text on system-white `<select>` (web) */
+    pickerSurface: '#eef2f7',
+    pickerForeground: '#0f172a',
   },
 };
 
